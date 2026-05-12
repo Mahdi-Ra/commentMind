@@ -1,0 +1,10 @@
+cat > .gitignore << 'EOF'
+backend/.env
+dashboard/.env.local
+__pycache__/
+*.pyc
+.env
+node_modules/
+.next/
+*.log
+EOF
