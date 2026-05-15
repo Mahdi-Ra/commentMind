@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production"
     
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://commentmind:commentmind@db:5432/commentmind"
+    ASYNC_DATABASE_URL: str = "postgresql+asyncpg://commentmind:commentmind@db:5432/commentmind"
     DATABASE_URL_SYNC: str = "postgresql://commentmind:commentmind@db:5432/commentmind"
     
     # Redis
