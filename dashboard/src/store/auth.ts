@@ -6,6 +6,12 @@ interface User {
   email: string
   full_name?: string
   plan: string
+  plan_display_name?: string
+  plan_max_sites?: number
+  plan_max_comments_month?: number
+  trial_plan?: string
+  trial_ends_at?: string
+  trial_days_left?: number
 }
 
 interface AuthStore {
@@ -16,6 +22,7 @@ interface AuthStore {
   register: (email: string, password: string, name?: string) => Promise<void>
   logout: () => void
   fetchMe: () => Promise<void>
+  setUser: (user: User) => void
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -55,4 +62,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({ user: null, token: null })
     }
   },
+
+  setUser: (user) => set({ user }),
 }))

@@ -14,6 +14,9 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     plan: Mapped[str] = mapped_column(String, default="free")  # free, starter, pro, agency
+    trial_plan: Mapped[str] = mapped_column(String, nullable=True)
+    trial_started_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    trial_ends_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

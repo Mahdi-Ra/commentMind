@@ -15,7 +15,7 @@ class CM_Settings {
         'auto_spam'        => true,
         'reply_as_user'    => '',   // WP user ID to post replies as
         'tone'             => 'friendly',
-        'language'         => 'fa',
+        'language'         => 'en',
     ];
 
     private function __construct() {

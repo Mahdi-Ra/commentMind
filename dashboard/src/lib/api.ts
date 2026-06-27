@@ -26,11 +26,18 @@ export const authApi = {
     api.post('/auth/login', { email, password }),
 
   me: () => api.get('/auth/me'),
+
+  updateProfile: (data: { full_name?: string }) => api.patch('/auth/me', data),
+
+  changePassword: (current_password: string, new_password: string) =>
+    api.post('/auth/change-password', { current_password, new_password }),
 }
 
 // ─── Sites ───────────────────────────────────────────────────────────────────
 export const sitesApi = {
   list: () => api.get('/sites'),
+
+  get: (id: string) => api.get(`/sites/${id}`),
 
   create: (data: {
     name: string
@@ -48,6 +55,11 @@ export const sitesApi = {
 
   regenerateKey: (id: string) =>
     api.post(`/sites/${id}/regenerate-key`),
+
+  getEmbed: (id: string) => api.get(`/sites/${id}/embed`),
+
+  testConnection: (id: string, api_key: string) =>
+    api.post(`/sites/${id}/test-connection`, { api_key }),
 }
 
 // ─── Comments ────────────────────────────────────────────────────────────────
@@ -57,6 +69,36 @@ export const commentsApi = {
 
   stats: (siteId: string) =>
     api.get(`/sites/${siteId}/stats`),
+
+  moderate: (siteId: string, commentId: string, data: { action: string; ai_reply?: string }) =>
+    api.patch(`/sites/${siteId}/comments/${commentId}`, data),
+
+  usage: () =>
+    api.get('/usage'),
+
+  insights: () =>
+    api.get('/insights'),
+
+  siteInsights: (siteId: string) =>
+    api.get(`/sites/${siteId}/insights`),
+}
+
+// ─── Billing / Crypto Checkout ─────────────────────────────────────────────
+export const billingApi = {
+  checkout: (data: {
+    plan: string
+    billing_cycle: 'monthly' | 'annual'
+    currency: 'USDT' | 'TRX'
+    network: 'TRC20'
+  }) => api.post('/billing/checkout', data),
+
+  payments: () => api.get('/billing/payments'),
+
+  submitTx: (paymentId: string, data: { tx_hash: string; note?: string }) =>
+    api.post(`/billing/payments/${paymentId}/submit`, data),
+
+  startTrial: (plan: string) =>
+    api.post('/billing/trial', { plan }),
 }
 
 // ─── Knowledge Base ──────────────────────────────────────────────────────────

@@ -24,9 +24,10 @@ class CM_API {
             'post_title'   => get_the_title($comment_data['comment_post_ID'] ?? 0),
             'post_url'     => get_permalink($comment_data['comment_post_ID'] ?? 0),
         ];
+        $payload = array_merge($payload, $this->product_context((int) ($comment_data['comment_post_ID'] ?? 0)));
 
         $response = wp_remote_post(
-            $this->api_url . '/api/v1/widget/comment',
+            $this->api_url . '/api/v1/widget/comment?wait=true',
             [
                 'timeout'     => $this->timeout,
                 'headers'     => [
@@ -54,6 +55,48 @@ class CM_API {
         }
 
         return $data;
+    }
+
+    private function product_context(int $post_id): array {
+        if (! $post_id || ! function_exists('wc_get_product')) {
+            return [];
+        }
+
+        $product = wc_get_product($post_id);
+        if (! $product) {
+            return [];
+        }
+
+        $stock_status = method_exists($product, 'get_stock_status')
+            ? $product->get_stock_status()
+            : '';
+        $price = method_exists($product, 'get_price')
+            ? $product->get_price()
+            : '';
+        $sku = method_exists($product, 'get_sku')
+            ? $product->get_sku()
+            : '';
+
+        $context = [
+            'Product type: WooCommerce',
+            'Product name: ' . $product->get_name(),
+        ];
+        if ($price !== '') {
+            $context[] = 'Current price: ' . $price;
+        }
+        if ($stock_status) {
+            $context[] = 'Stock status: ' . $stock_status;
+        }
+        if ($sku) {
+            $context[] = 'SKU: ' . $sku;
+        }
+
+        return [
+            'product_sku'          => (string) $sku,
+            'product_price'        => (string) $price,
+            'product_stock_status' => (string) $stock_status,
+            'product_context'      => implode("\n", $context),
+        ];
     }
 
     /**

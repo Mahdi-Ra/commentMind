@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CommentMind AI
  * Plugin URI:  https://commentmind.ai
- * Description: هوش مصنوعی برای مدیریت خودکار کامنت‌ها — جواب‌دهی، تأیید و فیلتر اسپم
+ * Description: AI-powered comment moderation, replies, approval, and spam filtering.
  * Version:     1.0.0
  * Author:      CommentMind
  * License:     GPL v2

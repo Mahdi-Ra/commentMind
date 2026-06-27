@@ -91,7 +91,7 @@ class CM_Moderator {
 
         // Determine who posts the reply
         $reply_user_id = (int) $this->settings->get('reply_as_user');
-        $reply_author  = 'پشتیبانی';
+        $reply_author  = 'Support';
         $reply_email   = get_bloginfo('admin_email');
 
         if ($reply_user_id) {

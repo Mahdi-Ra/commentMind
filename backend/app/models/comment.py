@@ -17,6 +17,10 @@ class Comment(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     post_title: Mapped[str] = mapped_column(String, nullable=True)
     post_url: Mapped[str] = mapped_column(String, nullable=True)
+    product_sku: Mapped[str] = mapped_column(String, nullable=True)
+    product_price: Mapped[str] = mapped_column(String, nullable=True)
+    product_stock_status: Mapped[str] = mapped_column(String, nullable=True)
+    product_context: Mapped[str] = mapped_column(Text, nullable=True)
     
     # AI Analysis
     status: Mapped[str] = mapped_column(String, default="pending")  # pending, approved, spam, replied, uncertain

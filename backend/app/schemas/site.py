@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -7,7 +7,7 @@ class SiteCreate(BaseModel):
     name: str
     domain: str
     tone: str = "friendly"
-    language: str = "fa"
+    language: str = "en"
     custom_instructions: Optional[str] = None
     auto_reply: bool = True
     auto_approve: bool = True
@@ -15,7 +15,8 @@ class SiteCreate(BaseModel):
 
 
 class SiteUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=120)
+    domain: Optional[str] = Field(None, min_length=1, max_length=255)
     tone: Optional[str] = None
     language: Optional[str] = None
     custom_instructions: Optional[str] = None

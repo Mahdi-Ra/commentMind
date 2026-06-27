@@ -6,9 +6,9 @@ from app.core.config import settings
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
 TONE_MAP = {
-    "friendly": "دوستانه، صمیمی و گرم",
-    "formal": "رسمی، محترمانه و حرفه‌ای",
-    "professional": "تخصصی، دقیق و مختصر",
+    "friendly": "friendly, warm, and helpful",
+    "formal": "formal, respectful, and polished",
+    "professional": "professional, precise, and concise",
 }
 
 INTENT_LABELS = ["question", "complaint", "praise", "spam", "other"]
@@ -19,8 +19,9 @@ async def analyze_comment(
     content: str,
     site_name: str,
     tone: str = "friendly",
-    language: str = "fa",
+    language: str = "en",
     knowledge_context: str = "",
+    page_context: str = "",
     custom_instructions: str = "",
 ) -> dict:
     """
@@ -34,21 +35,22 @@ async def analyze_comment(
         tone=tone,
         language=language,
         knowledge_context=knowledge_context,
+        page_context=page_context,
         custom_instructions=custom_instructions,
     )
 
     user_prompt = f"""
-کامنت زیر را تحلیل کن و JSON برگردان:
+Analyze the following website comment and return JSON.
 
-کامنت: "{content}"
+Comment: "{content}"
 
-باید دقیقاً این JSON را برگردانی (بدون هیچ متن اضافه):
+Return exactly this JSON shape with no extra text:
 {{
-  "spam_score": <عدد بین 0 تا 1 - احتمال اسپم بودن>,
+  "spam_score": <number between 0 and 1 indicating spam probability>,
   "intent": <"question"|"complaint"|"praise"|"spam"|"other">,
   "sentiment": <"positive"|"negative"|"neutral">,
-  "should_reply": <true|false - آیا باید جواب داد>,
-  "reply": <"متن جواب" یا null اگر نباید جواب داد>
+  "should_reply": <true|false>,
+  "reply": <reply text or null if no reply should be sent>
 }}
 """
 
@@ -84,41 +86,45 @@ def _build_system_prompt(
     tone: str,
     language: str,
     knowledge_context: str,
+    page_context: str,
     custom_instructions: str,
 ) -> str:
     tone_desc = TONE_MAP.get(tone, TONE_MAP["friendly"])
-    lang_desc = "فارسی" if language == "fa" else "English"
+    lang_desc = "English"
 
-    prompt = f"""تو دستیار هوشمند سایت «{site_name}» هستی و وظیفه‌ات مدیریت کامنت‌هاست.
+    prompt = f"""You are the AI comment assistant for "{site_name}".
 
-## وظایف تو:
-1. تشخیص اسپم بودن کامنت (spam_score)
-2. تشخیص هدف نویسنده (intent)
-3. تشخیص احساس کامنت (sentiment)
-4. نوشتن جواب مناسب (در صورت نیاز)
+## Your tasks
+1. Estimate whether the comment is spam (spam_score).
+2. Detect the writer's intent (intent).
+3. Detect comment sentiment (sentiment).
+4. Write an appropriate reply when needed.
 
-## لحن جواب: {tone_desc}
-## زبان جواب: {lang_desc}
+## Reply tone: {tone_desc}
+## Reply language: {lang_desc}
 
-## قوانین اسپم:
-- تبلیغات و لینک‌های تجاری → spam_score بالای 0.9
-- محتوای توهین‌آمیز → spam_score بالای 0.85
-- محتوای نامربوط → spam_score بالای 0.75
-- کامنت‌های واقعی → spam_score پایین‌تر از 0.3
+## Spam rules
+- Advertising or commercial links should usually score above 0.9.
+- Abusive content should usually score above 0.85.
+- Irrelevant content should usually score above 0.75.
+- Genuine customer comments should usually score below 0.3.
 
-## قوانین جواب:
-- اگه سوال داره → حتماً جواب بده
-- اگه شکایت داره → با همدلی جواب بده و راه‌حل پیشنهاد بده
-- اگه تعریف کرده → تشکر کن
-- اگه اسپمه → reply: null
-- جواب‌ها کوتاه، مفید و صمیمی باشند
+## Reply rules
+- If the comment asks a question, answer it.
+- If it is a complaint, respond empathetically and suggest a next step.
+- If it is praise, thank the customer.
+- If it is spam, set reply to null.
+- Keep replies short, useful, and on-brand.
 """
 
     if knowledge_context:
-        prompt += f"\n## اطلاعات سایت (برای جواب دادن از اینها استفاده کن):\n{knowledge_context}\n"
+        prompt += f"\n## Site knowledge to use when replying:\n{knowledge_context}\n"
+
+    if page_context:
+        prompt += f"\n## Page/product context for this comment:\n{page_context}\n"
 
     if custom_instructions:
-        prompt += f"\n## دستورالعمل‌های خاص ادمین:\n{custom_instructions}\n"
+        prompt += f"\n## Admin instructions:\n{custom_instructions}\n"
 
     return prompt
 
@@ -127,23 +133,23 @@ async def generate_standalone_reply(
     content: str,
     site_name: str,
     tone: str = "friendly",
-    language: str = "fa",
+    language: str = "en",
     knowledge_context: str = "",
 ) -> str:
     """Generate just a reply for a comment"""
     tone_desc = TONE_MAP.get(tone, TONE_MAP["friendly"])
-    lang_desc = "فارسی" if language == "fa" else "English"
+    lang_desc = "English"
 
     response = await client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         messages=[
             {
                 "role": "system",
-                "content": f"تو ادمین سایت «{site_name}» هستی. با لحن {tone_desc} به کامنت‌ها جواب بده. زبان: {lang_desc}.\n{knowledge_context}",
+                "content": f"You are the site admin for \"{site_name}\". Reply to comments in a {tone_desc} tone. Language: {lang_desc}.\n{knowledge_context}",
             },
             {
                 "role": "user",
-                "content": f"به این کامنت جواب بده:\n{content}",
+                "content": f"Reply to this comment:\n{content}",
             },
         ],
         temperature=0.6,

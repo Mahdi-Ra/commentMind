@@ -1,11 +1,23 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { commentsApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { useParams } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowRight, MessageSquare } from 'lucide-react'
-import { format } from 'date-fns'
+import { MessageSquare, Bot, CheckCircle2, ShieldAlert, Send } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+import { PageHeader } from '@/components/layout/page-header'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
+import { EmptyState } from '@/components/ui/empty-state'
+import {
+  STATUS_LABELS,
+  STATUS_VARIANTS,
+  INTENT_LABELS,
+} from '@/lib/constants'
+import { cn } from '@/lib/cn'
 
 interface Comment {
   id: string
@@ -21,42 +33,50 @@ interface Comment {
   created_at: string
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  approved: 'تأیید شده',
-  spam: 'اسپم',
-  replied: 'پاسخ داده شده',
-  uncertain: 'نامشخص',
-  pending: 'در انتظار',
+interface Stats {
+  total: number
+  approved: number
+  spam: number
+  replied: number
+  uncertain: number
+  today: number
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  approved: 'badge-green',
-  spam: 'badge-red',
-  replied: 'badge-blue',
-  uncertain: 'badge-yellow',
-  pending: 'badge-gray',
-}
+const FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'replied', label: 'Replied' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'spam', label: 'Spam' },
+  { value: 'uncertain', label: 'Review' },
+] as const
 
 export default function CommentsPage() {
   const { siteId } = useParams()
+  const id = siteId as string
+
   const [comments, setComments] = useState<Comment[]>([])
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
 
   useEffect(() => {
     load()
     loadStats()
-  }, [siteId, status, page])
+  }, [id, status, page])
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await commentsApi.list(siteId as string, { status: status || undefined, page, limit: 20 })
+      const res = await commentsApi.list(id, {
+        status: status || undefined,
+        page,
+        limit: 20,
+      })
       setComments(res.data)
     } catch {
-      toast.error('خطا در بارگذاری کامنت‌ها')
+      toast.error('Failed to load comments')
     } finally {
       setLoading(false)
     }
@@ -64,120 +84,209 @@ export default function CommentsPage() {
 
   const loadStats = async () => {
     try {
-      const res = await commentsApi.stats(siteId as string)
+      const res = await commentsApi.stats(id)
       setStats(res.data)
-    } catch {}
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const handleModerate = async (commentId: string, action: string, ai_reply?: string) => {
+    try {
+      const res = await commentsApi.moderate(id, commentId, { action, ai_reply })
+      setComments((items) => items.map((item) => (item.id === commentId ? res.data : item)))
+      loadStats()
+      toast.success('Comment updated')
+    } catch {
+      toast.error('Could not update comment')
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-500 hover:text-indigo-600 transition">
-            <ArrowRight size={20} />
-          </Link>
-          <h1 className="text-lg font-bold">کامنت‌ها</h1>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title="Comments"
+        description="Review AI moderation decisions and generated replies."
+        backHref="/dashboard"
+        backLabel="All sites"
+      />
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
-              { label: 'کل', value: stats.total, color: 'blue' },
-              { label: 'تأیید شده', value: stats.approved, color: 'green' },
-              { label: 'پاسخ داده شده', value: stats.replied, color: 'indigo' },
-              { label: 'اسپم', value: stats.spam, color: 'red' },
-              { label: 'امروز', value: stats.today, color: 'yellow' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="card text-center py-4">
-                <div className={`text-2xl font-bold text-${color}-600`}>{value}</div>
-                <div className="text-xs text-gray-500 mt-1">{label}</div>
-              </div>
+              { label: 'Total', value: stats.total, className: 'text-slate-900' },
+              { label: 'Approved', value: stats.approved, className: 'text-emerald-600' },
+              { label: 'Replied', value: stats.replied, className: 'text-violet-600' },
+              { label: 'Spam', value: stats.spam, className: 'text-red-600' },
+              { label: 'Today', value: stats.today, className: 'text-slate-700' },
+            ].map(({ label, value, className }) => (
+              <Card key={label} padding className="!p-4 text-center">
+                <p className={cn('text-2xl font-semibold tabular-nums', className)}>{value}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
+              </Card>
             ))}
           </div>
         )}
 
-        {/* Filter */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {['', 'approved', 'replied', 'spam', 'uncertain'].map((s) => (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
             <button
-              key={s}
-              onClick={() => { setStatus(s); setPage(1) }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                status === s ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+              key={f.value}
+              type="button"
+              onClick={() => {
+                setStatus(f.value)
+                setPage(1)
+              }}
+              className={cn(
+                'rounded-lg px-3.5 py-2 text-sm font-medium transition',
+                status === f.value
+                  ? 'bg-violet-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50',
+              )}
             >
-              {s === '' ? 'همه' : STATUS_LABELS[s]}
+              {f.label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-16 text-gray-400">در حال بارگذاری...</div>
+          <Spinner label="Loading comments…" />
         ) : comments.length === 0 ? (
-          <div className="card text-center py-16">
-            <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500">کامنتی یافت نشد.</p>
-          </div>
+          <EmptyState
+            icon={MessageSquare}
+            title="No comments found"
+            description={
+              status
+                ? 'Try a different filter or check back when new comments arrive.'
+                : 'Comments will appear here once your site integration sends them.'
+            }
+          />
         ) : (
-          <div className="space-y-3">
+          <ul className="space-y-3">
             {comments.map((c) => (
-              <div key={c.id} className="card">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className={`badge ${STATUS_BADGE[c.status] || 'badge-gray'}`}>
-                        {STATUS_LABELS[c.status] || c.status}
-                      </span>
-                      {c.intent && <span className="badge badge-gray">{c.intent}</span>}
-                      {c.sentiment && <span className="badge badge-gray">{c.sentiment}</span>}
-                      {c.spam_score !== undefined && (
-                        <span className="text-xs text-gray-400">اسپم: {Math.round(c.spam_score * 100)}%</span>
-                      )}
-                    </div>
-                    <p className="text-gray-800 text-sm leading-relaxed">{c.content}</p>
-                    {c.ai_reply && (
-                      <div className="mt-3 bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-                        <p className="text-xs text-indigo-500 font-medium mb-1">🤖 پاسخ AI:</p>
-                        <p className="text-sm text-indigo-900">{c.ai_reply}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-left shrink-0">
-                    <p className="text-xs text-gray-500">{c.author_name || 'ناشناس'}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {format(new Date(c.created_at), 'yyyy/MM/dd HH:mm')}
-                    </p>
-                    {c.post_title && (
-                      <p className="text-xs text-indigo-500 mt-1 truncate max-w-[120px]">{c.post_title}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <li key={c.id}>
+                <CommentCard comment={c} onModerate={handleModerate} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
 
-        {/* Pagination */}
-        <div className="flex justify-center gap-3 mt-6">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="btn-secondary disabled:opacity-40"
-          >
-            قبلی
-          </button>
-          <span className="flex items-center text-sm text-gray-500">صفحه {page}</span>
-          <button
-            onClick={() => setPage(p => p + 1)}
-            disabled={comments.length < 20}
-            className="btn-secondary disabled:opacity-40"
-          >
-            بعدی
-          </button>
+        {!loading && comments.length > 0 && (
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-slate-500">Page {page}</span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={comments.length < 20}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+function CommentCard({
+  comment: c,
+  onModerate,
+}: {
+  comment: Comment
+  onModerate: (commentId: string, action: string, ai_reply?: string) => void
+}) {
+  const statusVariant = STATUS_VARIANTS[c.status] || 'neutral'
+  const [reply, setReply] = useState(c.ai_reply || '')
+
+  return (
+    <Card padding className="!p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Badge variant={statusVariant}>{STATUS_LABELS[c.status] || c.status}</Badge>
+            {c.intent && (
+              <Badge variant="neutral">{INTENT_LABELS[c.intent] || c.intent}</Badge>
+            )}
+            {c.sentiment && <Badge variant="neutral">{c.sentiment}</Badge>}
+            {c.spam_score !== undefined && c.spam_score !== null && (
+              <span className="text-xs text-slate-400">
+                Spam {Math.round(c.spam_score * 100)}%
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-slate-800">{c.content}</p>
+          {c.ai_reply && (
+            <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50/80 p-4">
+              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-violet-700">
+                <Bot className="h-3.5 w-3.5" />
+                AI reply
+              </p>
+              <p className="text-sm text-violet-950">{c.ai_reply}</p>
+            </div>
+          )}
+          {(c.status === 'pending' || c.status === 'uncertain') && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <label className="text-xs font-semibold text-slate-500">Reply before approving</label>
+              <textarea
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                rows={3}
+                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                placeholder="Optional reply..."
+              />
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+        <aside className="shrink-0 text-right sm:pl-4">
+          <p className="text-sm font-medium text-slate-700">{c.author_name || 'Anonymous'}</p>
+          <p className="mt-0.5 text-xs text-slate-400">
+            {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+          </p>
+          {c.post_title && (
+            <p className="mt-2 max-w-[160px] truncate text-xs text-violet-600" title={c.post_title}>
+              {c.post_title}
+            </p>
+          )}
+          <div className="mt-4 flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onModerate(c.id, 'approve')}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Approve
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onModerate(c.id, 'reply', reply)}
+              disabled={!reply.trim()}
+            >
+              <Send className="h-4 w-4" />
+              Reply
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onModerate(c.id, 'spam')}
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Spam
+            </Button>
+          </div>
+        </aside>
+      </div>
+    </Card>
   )
 }

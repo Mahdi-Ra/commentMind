@@ -35,8 +35,7 @@ class CM_Admin {
         $clean['reply_as_user'] = absint($input['reply_as_user'] ?? 0);
         $clean['tone']          = in_array($input['tone'] ?? '', ['friendly', 'formal', 'professional'])
                                   ? $input['tone'] : 'friendly';
-        $clean['language']      = in_array($input['language'] ?? '', ['fa', 'en'])
-                                  ? $input['language'] : 'fa';
+        $clean['language']      = 'en';
         return $clean;
     }
 
@@ -53,13 +52,13 @@ class CM_Admin {
         ?>
         <div class="wrap cm-wrap">
             <h1>🧠 CommentMind AI</h1>
-            <p class="cm-subtitle">هوش مصنوعی برای مدیریت خودکار کامنت‌های سایت شما</p>
+            <p class="cm-subtitle">AI-powered comment moderation for your website.</p>
 
             <form method="post" action="options.php">
                 <?php settings_fields('commentmind_settings_group'); ?>
 
                 <div class="cm-card">
-                    <h2>🔑 تنظیمات اتصال</h2>
+                    <h2>🔑 Connection settings</h2>
                     <table class="form-table">
                         <tr>
                             <th>API Key</th>
@@ -67,11 +66,11 @@ class CM_Admin {
                                 <input type="password" name="commentmind_settings[api_key]"
                                        value="<?= esc_attr($settings->get('api_key')); ?>"
                                        class="regular-text" placeholder="cm_..." />
-                                <p class="description">کلید API سایت خود را از داشبورد CommentMind دریافت کنید.</p>
+                                <p class="description">Get your site API key from the CommentMind dashboard.</p>
                             </td>
                         </tr>
                         <tr>
-                            <th>آدرس API</th>
+                            <th>API URL</th>
                             <td>
                                 <input type="url" name="commentmind_settings[api_url]"
                                        value="<?= esc_attr($settings->get('api_url')); ?>"
@@ -82,14 +81,14 @@ class CM_Admin {
                 </div>
 
                 <div class="cm-card">
-                    <h2>🤖 تنظیمات هوش مصنوعی</h2>
+                    <h2>🤖 AI settings</h2>
                     <table class="form-table">
                         <tr>
-                            <th>لحن جواب‌ها</th>
+                            <th>Reply tone</th>
                             <td>
                                 <select name="commentmind_settings[tone]">
                                     <?php
-                                    $tones = ['friendly' => 'دوستانه', 'formal' => 'رسمی', 'professional' => 'حرفه‌ای'];
+                                    $tones = ['friendly' => 'Friendly', 'formal' => 'Formal', 'professional' => 'Professional'];
                                     foreach ($tones as $val => $label) {
                                         printf(
                                             '<option value="%s" %s>%s</option>',
@@ -103,19 +102,18 @@ class CM_Admin {
                             </td>
                         </tr>
                         <tr>
-                            <th>زبان پاسخ</th>
+                            <th>Reply language</th>
                             <td>
                                 <select name="commentmind_settings[language]">
-                                    <option value="fa" <?= selected($settings->get('language'), 'fa', false); ?>>فارسی</option>
-                                    <option value="en" <?= selected($settings->get('language'), 'en', false); ?>>English</option>
+                                    <option value="en" selected>English</option>
                                 </select>
                             </td>
                         </tr>
                         <tr>
-                            <th>پاسخ‌دهنده</th>
+                            <th>Reply author</th>
                             <td>
                                 <select name="commentmind_settings[reply_as_user]">
-                                    <option value="0">پشتیبانی (پیش‌فرض)</option>
+                                    <option value="0">Support (default)</option>
                                     <?php foreach ($users as $user) : ?>
                                         <option value="<?= esc_attr($user->ID); ?>"
                                             <?= selected($settings->get('reply_as_user'), $user->ID, false); ?>>
@@ -129,48 +127,48 @@ class CM_Admin {
                 </div>
 
                 <div class="cm-card">
-                    <h2>⚙️ تنظیمات مدیریت</h2>
+                    <h2>⚙️ Moderation settings</h2>
                     <table class="form-table">
                         <tr>
-                            <th>پاسخ خودکار</th>
+                            <th>Auto-reply</th>
                             <td>
                                 <label>
                                     <input type="checkbox" name="commentmind_settings[auto_reply]"
                                            value="1" <?= checked($settings->get('auto_reply'), true, false); ?> />
-                                    جواب AI به کامنت‌ها ارسال شود
+                                    Send AI replies to comments
                                 </label>
                             </td>
                         </tr>
                         <tr>
-                            <th>تأیید خودکار</th>
+                            <th>Auto-approve</th>
                             <td>
                                 <label>
                                     <input type="checkbox" name="commentmind_settings[auto_approve]"
                                            value="1" <?= checked($settings->get('auto_approve'), true, false); ?> />
-                                    کامنت‌های معتبر بدون نیاز به تأیید ادمین نشر شوند
+                                    Publish valid comments without manual approval
                                 </label>
                             </td>
                         </tr>
                         <tr>
-                            <th>فیلتر اسپم</th>
+                            <th>Spam filter</th>
                             <td>
                                 <label>
                                     <input type="checkbox" name="commentmind_settings[auto_spam]"
                                            value="1" <?= checked($settings->get('auto_spam'), true, false); ?> />
-                                    کامنت‌های اسپم به‌صورت خودکار علامت‌گذاری شوند
+                                    Automatically mark spam comments
                                 </label>
                             </td>
                         </tr>
                     </table>
                 </div>
 
-                <?php submit_button('ذخیره تنظیمات'); ?>
+                <?php submit_button('Save settings'); ?>
             </form>
 
             <?php if ($settings->get('api_key')) : ?>
             <div class="cm-card cm-status">
-                <h2>📊 وضعیت</h2>
-                <p>✅ افزونه فعال است و کامنت‌ها پردازش می‌شوند.</p>
+                <h2>📊 Status</h2>
+                <p>✅ The plugin is active and comments are being processed.</p>
             </div>
             <?php endif; ?>
         </div>

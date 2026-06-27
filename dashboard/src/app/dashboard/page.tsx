@@ -1,11 +1,32 @@
 'use client'
+
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/auth'
+import type { ComponentProps } from 'react'
+import Link from 'next/link'
 import { sitesApi, commentsApi } from '@/lib/api'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { Globe, MessageSquare, Plus, Settings, BarChart2, Shield } from 'lucide-react'
+import {
+  Globe,
+  MessageSquare,
+  Plus,
+  Settings,
+  MessageCircle,
+  ShieldAlert,
+  TrendingUp,
+} from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Modal } from '@/components/ui/modal'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Spinner } from '@/components/ui/spinner'
+import { Label, Input, Select } from '@/components/ui/input'
+import { UsageBar } from '@/components/dashboard/usage-bar'
+import { InsightPanel } from '@/components/dashboard/insight-panel'
+import { TONE_OPTIONS, LANGUAGE_OPTIONS } from '@/lib/constants'
+import { useAuthStore } from '@/store/auth'
+import { cn } from '@/lib/cn'
 
 interface Site {
   id: string
@@ -27,213 +48,291 @@ interface Stats {
   today: number
 }
 
+interface Usage {
+  comments_this_month: number
+  sites_count: number
+}
+
+type Insights = ComponentProps<typeof InsightPanel>['insights']
+
 export default function DashboardPage() {
-  const { user, token, fetchMe, logout } = useAuthStore()
+  const { user } = useAuthStore()
   const [sites, setSites] = useState<Site[]>([])
   const [statsMap, setStatsMap] = useState<Record<string, Stats>>({})
+  const [usage, setUsage] = useState<Usage | null>(null)
+  const [insights, setInsights] = useState<Insights | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showAddSite, setShowAddSite] = useState(false)
-  const [newSite, setNewSite] = useState({ name: '', domain: '', tone: 'friendly', language: 'fa' })
-  const router = useRouter()
+  const [creating, setCreating] = useState(false)
+  const [newSite, setNewSite] = useState({
+    name: '',
+    domain: '',
+    tone: 'friendly',
+    language: 'en',
+  })
 
   useEffect(() => {
-    if (!token) {
-      router.push('/auth')
-      return
-    }
-    fetchMe()
     loadSites()
   }, [])
 
   const loadSites = async () => {
+    setLoading(true)
     try {
       const res = await sitesApi.list()
       const list: Site[] = res.data
       setSites(list)
-      // Load stats for each site
-      list.forEach(async (site) => {
-        try {
-          const s = await commentsApi.stats(site.id)
-          setStatsMap(prev => ({ ...prev, [site.id]: s.data }))
-        } catch {}
-      })
+      await Promise.all([
+        ...list.map(async (site) => {
+          try {
+            const s = await commentsApi.stats(site.id)
+            setStatsMap((prev) => ({ ...prev, [site.id]: s.data }))
+          } catch { /* ignore */ }
+        }),
+        commentsApi.usage().then((r) => setUsage(r.data)).catch(() => {}),
+        commentsApi.insights().then((r) => setInsights(r.data)).catch(() => {}),
+      ])
     } catch {
-      toast.error('خطا در بارگذاری سایت‌ها')
+      toast.error('Failed to load sites')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleAddSite = async (e: React.FormEvent) => {
     e.preventDefault()
+    setCreating(true)
     try {
       const res = await sitesApi.create(newSite)
-      toast.success(`سایت اضافه شد! API Key: ${res.data.api_key}`, { duration: 10000 })
+      toast.success('Site created', {
+        description: "Copy your API key now — it won't be shown again.",
+        duration: 12000,
+      })
+      if (res.data.api_key) {
+        await navigator.clipboard.writeText(res.data.api_key)
+        toast.message('API key copied to clipboard')
+      }
       setShowAddSite(false)
-      setNewSite({ name: '', domain: '', tone: 'friendly', language: 'fa' })
+      setNewSite({ name: '', domain: '', tone: 'friendly', language: 'en' })
       loadSites()
-    } catch {
-      toast.error('خطا در ایجاد سایت')
+    } catch (err: unknown) {
+      const detail =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined
+      toast.error(typeof detail === 'string' ? detail : 'Could not create site')
+    } finally {
+      setCreating(false)
     }
   }
 
+  const firstName = user?.full_name?.split(' ')[0] || 'there'
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🧠</span>
-            <span className="font-bold text-xl text-indigo-600">CommentMind AI</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{user?.email}</span>
-            <button onClick={logout} className="text-sm text-gray-500 hover:text-red-500 transition">خروج</button>
-          </div>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title={`Good ${getGreeting()}, ${firstName}`}
+        description="Manage AI moderation for all your connected sites."
+        actions={
+          <Button onClick={() => setShowAddSite(true)}>
+            <Plus className="h-4 w-4" />
+            Add site
+          </Button>
+        }
+      />
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Welcome */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">سلام {user?.full_name || ''}! 👋</h2>
-          <p className="text-gray-500 mt-1">اینجا می‌تونی سایت‌هات رو مدیریت کنی.</p>
-        </div>
-
-        {/* Sites Grid */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">سایت‌های من</h3>
-          <button onClick={() => setShowAddSite(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={16} />
-            افزودن سایت
-          </button>
-        </div>
-
-        {sites.length === 0 ? (
-          <div className="card text-center py-16">
-            <Globe size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">هنوز سایتی اضافه نکردی!</p>
-            <p className="text-gray-400 text-sm mt-1">با کلیک روی «افزودن سایت» شروع کن.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sites.map((site) => {
-              const s = statsMap[site.id]
-              return (
-                <div key={site.id} className="card hover:shadow-md transition">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{site.name}</h4>
-                      <p className="text-sm text-gray-500 mt-0.5">{site.domain}</p>
-                    </div>
-                    <span className={`badge ${site.is_active ? 'badge-green' : 'badge-gray'}`}>
-                      {site.is_active ? 'فعال' : 'غیرفعال'}
-                    </span>
-                  </div>
-
-                  {s && (
-                    <div className="grid grid-cols-3 gap-2 my-3">
-                      <StatChip label="کل" value={s.total} color="blue" />
-                      <StatChip label="امروز" value={s.today} color="indigo" />
-                      <StatChip label="اسپم" value={s.spam} color="red" />
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    {site.auto_reply && <span className="badge badge-blue">جواب خودکار</span>}
-                    {site.auto_approve && <span className="badge badge-green">تأیید خودکار</span>}
-                    {site.auto_spam && <span className="badge badge-yellow">فیلتر اسپم</span>}
-                  </div>
-
-                  <div className="flex gap-2 mt-4">
-                    <Link href={`/dashboard/sites/${site.id}/comments`} className="btn-secondary flex items-center gap-1 text-sm flex-1 justify-center">
-                      <MessageSquare size={14} />
-                      کامنت‌ها
-                    </Link>
-                    <Link href={`/dashboard/sites/${site.id}`} className="btn-secondary flex items-center gap-1 text-sm flex-1 justify-center">
-                      <Settings size={14} />
-                      تنظیمات
-                    </Link>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        {/* Usage bar */}
+        {user && usage !== null && (
+          <UsageBar
+            plan={user.plan}
+            trialDaysLeft={user.trial_days_left}
+            usedComments={usage?.comments_this_month ?? 0}
+            usedSites={usage?.sites_count ?? sites.length}
+          />
         )}
 
-        {/* Add Site Modal */}
-        {showAddSite && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-              <h3 className="text-lg font-bold mb-4">افزودن سایت جدید</h3>
-              <form onSubmit={handleAddSite} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">نام سایت</label>
-                  <input
-                    type="text" required
-                    value={newSite.name}
-                    onChange={e => setNewSite(p => ({ ...p, name: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    placeholder="فروشگاه من"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">دامنه</label>
-                  <input
-                    type="text" required
-                    value={newSite.domain}
-                    onChange={e => setNewSite(p => ({ ...p, domain: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    placeholder="mysite.ir"
-                    dir="ltr"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">لحن</label>
-                    <select
-                      value={newSite.tone}
-                      onChange={e => setNewSite(p => ({ ...p, tone: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                    >
-                      <option value="friendly">دوستانه</option>
-                      <option value="formal">رسمی</option>
-                      <option value="professional">حرفه‌ای</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">زبان</label>
-                    <select
-                      value={newSite.language}
-                      onChange={e => setNewSite(p => ({ ...p, language: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                    >
-                      <option value="fa">فارسی</option>
-                      <option value="en">English</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="submit" className="btn-primary flex-1">ایجاد سایت</button>
-                  <button type="button" onClick={() => setShowAddSite(false)} className="btn-secondary flex-1">انصراف</button>
-                </div>
-              </form>
+        {loading ? (
+          <Spinner label="Loading your sites…" />
+        ) : sites.length === 0 ? (
+          <EmptyState
+            icon={Globe}
+            title="No sites yet"
+            description="Connect your first website to start moderating comments with AI."
+            action={{ label: 'Add your first site', onClick: () => setShowAddSite(true) }}
+          />
+        ) : (
+          <>
+            {insights && <InsightPanel insights={insights} />}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {sites.map((site) => (
+                <SiteCard key={site.id} site={site} stats={statsMap[site.id]} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <Modal
+        open={showAddSite}
+        onClose={() => setShowAddSite(false)}
+        title="Add a new site"
+        description="You'll receive an API key to use in the WordPress plugin or API integration."
+      >
+        <form onSubmit={handleAddSite} className="space-y-4">
+          <div>
+            <Label htmlFor="site-name">Site name</Label>
+            <Input
+              id="site-name"
+              required
+              value={newSite.name}
+              onChange={(e) => setNewSite((p) => ({ ...p, name: e.target.value }))}
+              placeholder="My Store"
+            />
+          </div>
+          <div>
+            <Label htmlFor="site-domain">Domain</Label>
+            <Input
+              id="site-domain"
+              required
+              value={newSite.domain}
+              onChange={(e) => setNewSite((p) => ({ ...p, domain: e.target.value }))}
+              placeholder="example.com"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="tone">Reply tone</Label>
+              <Select
+                id="tone"
+                value={newSite.tone}
+                onChange={(e) => setNewSite((p) => ({ ...p, tone: e.target.value }))}
+              >
+                {TONE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="lang">Language</Label>
+              <Select
+                id="lang"
+                value={newSite.language}
+                onChange={(e) => setNewSite((p) => ({ ...p, language: e.target.value }))}
+              >
+                {LANGUAGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </Select>
             </div>
           </div>
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" loading={creating} className="flex-1">
+              Create site
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setShowAddSite(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
+  )
+}
+
+function SiteCard({ site, stats }: { site: Site; stats?: Stats }) {
+  return (
+    <Card hover className="flex flex-col">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-slate-900">{site.name}</h3>
+          <p className="mt-0.5 text-sm text-slate-500">{site.domain}</p>
+        </div>
+        <Badge variant={site.is_active ? 'success' : 'neutral'}>
+          {site.is_active ? 'Active' : 'Inactive'}
+        </Badge>
+      </div>
+
+      {stats && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <StatMini icon={MessageCircle} label="Total" value={stats.total} />
+          <StatMini icon={TrendingUp} label="Today" value={stats.today} accent />
+          <StatMini icon={ShieldAlert} label="Spam" value={stats.spam} warn={stats.spam > 0} />
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {site.auto_reply && <Badge variant="info">Auto-reply</Badge>}
+        {site.auto_approve && <Badge variant="success">Auto-approve</Badge>}
+        {site.auto_spam && <Badge variant="warning">Spam filter</Badge>}
+      </div>
+
+      <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+        <Link href={`/dashboard/sites/${site.id}/comments`} className="flex-1">
+          <Button variant="secondary" size="sm" className="w-full">
+            <MessageSquare className="h-4 w-4" />
+            Comments
+          </Button>
+        </Link>
+        <Link href={`/dashboard/sites/${site.id}`} className="flex-1">
+          <Button variant="outline" size="sm" className="w-full">
+            <Settings className="h-4 w-4" />
+            Settings
+          </Button>
+        </Link>
+      </div>
+    </Card>
+  )
+}
+
+function StatMini({
+  icon: Icon,
+  label,
+  value,
+  accent,
+  warn,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  value: number
+  accent?: boolean
+  warn?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-lg px-2 py-2.5 text-center',
+        warn ? 'bg-red-50' : accent ? 'bg-violet-50' : 'bg-slate-50',
+      )}
+    >
+      <Icon
+        className={cn(
+          'mx-auto mb-1 h-3.5 w-3.5',
+          warn ? 'text-red-500' : accent ? 'text-violet-600' : 'text-slate-400',
         )}
-      </main>
+      />
+      <div
+        className={cn(
+          'text-lg font-semibold tabular-nums',
+          warn ? 'text-red-700' : accent ? 'text-violet-700' : 'text-slate-900',
+        )}
+      >
+        {value}
+      </div>
+      <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+        {label}
+      </div>
     </div>
   )
 }
 
-function StatChip({ label, value, color }: { label: string; value: number; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-700',
-    indigo: 'bg-indigo-50 text-indigo-700',
-    red: 'bg-red-50 text-red-700',
-    green: 'bg-green-50 text-green-700',
-  }
-  return (
-    <div className={`rounded-lg p-2 text-center ${colors[color] || colors.blue}`}>
-      <div className="text-lg font-bold">{value}</div>
-      <div className="text-xs opacity-75">{label}</div>
-    </div>
-  )
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
 }

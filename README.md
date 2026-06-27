@@ -1,161 +1,212 @@
-# 🧠 CommentMind AI
+# CommentMind AI
 
-> هوش مصنوعی برای مدیریت خودکار کامنت‌های سایت
+AI-powered comment moderation for modern websites.
 
-CommentMind AI به سایت‌های فروشگاهی، بلاگ‌ها و هر پلتفرمی کمک می‌کنه که:
-- 🤖 **به‌طور خودکار** به کامنت‌های کاربران جواب بده
-- ✅ کامنت‌های معتبر رو تأیید کنه
-- 🚫 اسپم‌ها رو فیلتر کنه
-- 📚 بر اساس دانش سایت شما جواب بده
+CommentMind AI helps stores, blogs, and content platforms:
 
----
+- Automatically reply to customer comments
+- Approve legitimate comments
+- Filter spam and low-quality submissions
+- Answer from your own site knowledge base
+- Surface sales opportunities, customer risks, and repeated knowledge gaps
 
-## 🏗️ معماری
+## Architecture
 
-```
+```text
 commentmind-ai/
-├── backend/              # FastAPI + PostgreSQL + Redis
-├── wordpress-plugin/     # افزونه وردپرس (PHP)
-├── dashboard/            # داشبورد مدیریتی (Next.js)
-└── docker-compose.yml    # راه‌اندازی کامل با یه دستور
+├── backend/              # FastAPI + PostgreSQL + Redis + Celery
+├── wordpress-plugin/     # WordPress plugin
+├── dashboard/            # Admin dashboard (Next.js)
+├── widget/               # Widget demo assets
+└── docker-compose.yml    # Local orchestration
 ```
 
-## 🚀 راه‌اندازی سریع
+## Quick Start
 
-### ۱. Clone و Config
+### 1. Configure Environment
 
 ```bash
 git clone https://github.com/yourname/commentmind-ai.git
 cd commentmind-ai
 
-# Backend
 cp backend/.env.example backend/.env
-# ویرایش backend/.env و اضافه کردن OPENAI_API_KEY
-
-# Dashboard
 cp dashboard/.env.local.example dashboard/.env.local
 ```
 
-### ۲. اجرا
+Edit `backend/.env` and add:
 
-```bash
-docker-compose up -d
+```env
+OPENAI_API_KEY=sk-...
+SECRET_KEY=change-this
+PUBLIC_BASE_URL=http://localhost:8000
+USDT_TRC20_ADDRESS=
+TRX_ADDRESS=
+PAYMENT_ADMIN_EMAILS=
 ```
 
-سرویس‌ها:
-| سرویس | آدرس |
-|-------|------|
+Edit `dashboard/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### 2. Run Locally
+
+```bash
+docker compose up --build
+```
+
+Run migrations:
+
+```bash
+docker compose exec backend alembic upgrade head
+```
+
+Services:
+
+| Service | URL |
+| --- | --- |
 | Backend API | http://localhost:8000 |
 | API Docs | http://localhost:8000/docs |
 | Dashboard | http://localhost:3000 |
 
----
-
-## 🔌 نصب افزونه وردپرس
-
-1. پوشه `wordpress-plugin/commentmind-ai` را ZIP کنید
-2. در WordPress Admin → Plugins → Add New → Upload
-3. فعال‌سازی افزونه
-4. Settings → CommentMind AI
-5. API Key از داشبورد وارد کنید
-
----
-
-## 📡 API
-
-### احراز هویت
+For background comment processing:
 
 ```bash
-# ثبت‌نام
-POST /api/v1/auth/register
-{"email": "admin@site.ir", "password": "pass", "full_name": "نام"}
-
-# ورود
-POST /api/v1/auth/login
-{"email": "admin@site.ir", "password": "pass"}
+docker compose exec backend celery -A app.worker.celery_app worker --loglevel=info --concurrency=2 -Q default
 ```
 
-### ثبت سایت
+## WordPress Plugin
 
-```bash
+1. Zip `wordpress-plugin/commentmind-ai`
+2. Upload it in WordPress Admin → Plugins → Add New → Upload
+3. Activate the plugin
+4. Open Settings → CommentMind AI
+5. Add the site API key from the dashboard
+6. Set API URL to your backend URL
+
+The plugin can send WooCommerce product context such as SKU, price, stock status, and product title when comments are posted on product pages.
+
+## API Examples
+
+### Register
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "strong-password",
+  "full_name": "Admin User"
+}
+```
+
+### Login
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "strong-password"
+}
+```
+
+### Create Site
+
+```http
 POST /api/v1/sites
 Authorization: Bearer <jwt_token>
-{"name": "فروشگاه من", "domain": "myshop.ir", "tone": "friendly", "language": "fa"}
+Content-Type: application/json
 
-# Response: {"id": "...", "api_key": "cm_..."}  ← این کلید رو نگه دار!
+{
+  "name": "My Store",
+  "domain": "example.com",
+  "tone": "friendly",
+  "language": "en"
+}
 ```
 
-### ارسال کامنت (از پلاگین/ویجت)
+The response includes a one-time site API key. Store it securely.
 
-```bash
+### Submit Comment
+
+```http
 POST /api/v1/widget/comment
 Authorization: Bearer <site_api_key>
+Content-Type: application/json
 
 {
   "external_id": "123",
-  "author_name": "علی",
-  "author_email": "ali@example.com",
-  "content": "سلام، آیا این محصول ضمانت دارد؟",
-  "post_title": "محصول X",
-  "post_url": "https://myshop.ir/product/x"
+  "author_name": "Alex",
+  "author_email": "alex@example.com",
+  "content": "Does this product include a warranty?",
+  "post_title": "Product X",
+  "post_url": "https://example.com/product/x"
 }
+```
 
-# Response:
+Example response:
+
+```json
 {
   "comment_id": "...",
-  "status": "replied",     # approved | spam | replied | uncertain
-  "ai_reply": "سلام! بله، این محصول ۱۸ ماه ضمانت کارخانه دارد.",
+  "status": "replied",
+  "ai_reply": "Yes, this product includes an 18-month manufacturer warranty.",
   "spam_score": 0.02,
   "intent": "question",
   "sentiment": "neutral"
 }
 ```
 
----
+## Knowledge Base
 
-## ⚙️ تنظیمات
+The AI uses site knowledge when writing replies.
 
-### لحن جواب‌ها
-- `friendly` — دوستانه و صمیمی
-- `formal` — رسمی و محترمانه
-- `professional` — تخصصی و مختصر
+### Add Text
 
-### آستانه‌ها
-- `spam_threshold` (پیش‌فرض: ۰.۸۵) — کامنت‌هایی با spam_score بالاتر، اسپم می‌شن
-- `approve_threshold` (پیش‌فرض: ۰.۹۰) — کامنت‌هایی با spam_score پایین‌تر، تأیید می‌شن
-
----
-
-## 📚 پایگاه دانش
-
-AI از محتوای پایگاه دانش برای جواب‌دادن استفاده می‌کنه:
-
-```bash
-# افزودن متن
+```http
 POST /api/v1/sites/{site_id}/knowledge
-{"content": "سیاست بازگشت کالا: تا ۷ روز امکان مرجوع کردن دارید.", "source_name": "policies"}
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
 
-# آپلود فایل .txt
-POST /api/v1/sites/{site_id}/knowledge/upload
-form-data: file=@knowledge.txt
+{
+  "content": "Return policy: customers can return items within 7 days.",
+  "source_name": "policies"
+}
 ```
 
----
+### Upload Text File
 
-## 🛣️ Roadmap
+```http
+POST /api/v1/sites/{site_id}/knowledge/upload
+Authorization: Bearer <jwt_token>
+Content-Type: multipart/form-data
 
-- [x] Backend API (FastAPI)
-- [x] WordPress Plugin
-- [x] Dashboard (Next.js)
-- [ ] JS Widget (Universal)
-- [ ] PDF/DOCX support in Knowledge Base
-- [ ] Vector search (pgvector)
-- [ ] Webhook notifications
-- [ ] Multi-language support
-- [ ] Usage analytics & billing
+file=@knowledge.txt
+```
 
----
+## Plans and Trials
 
-## 📄 License
+Paid plans support a 7-day free trial. Crypto checkout supports USDT/TRC20 and TRX. Payment verification is currently manual through the admin confirmation endpoint.
+
+## Product Features
+
+- AI moderation and reply generation
+- Review queue with approve, reply, spam, and pending actions
+- ROI meter for time and support-cost savings
+- Lost-sales detector for buying-intent comments
+- Smart reply confidence summary
+- Knowledge gap alerts
+- Suggested FAQ builder
+- Comment funnel analytics
+- Risk radar for negative comments and repeated issues
+- Weekly AI report summary
+- Universal JavaScript widget
+- WordPress and WooCommerce integration
+
+## License
 
 MIT

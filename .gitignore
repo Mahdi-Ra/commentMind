@@ -1,2 +1,30 @@
 .env
 backend/.env
+
+# OS / editor
+.DS_Store
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+
+# Local env files
+dashboard/.env.local
+*.local
+
+# Runtime state
+backend/celerybeat-schedule
+celerybeat-schedule
+
+# Logs
+*.log

@@ -1,10 +1,31 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { sitesApi, knowledgeApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { useParams } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowRight, Trash2, Upload, Plus, Eye, EyeOff, Copy, RefreshCw } from 'lucide-react'
+import {
+  Key,
+  Settings2,
+  BookOpen,
+  Plug,
+  Copy,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Plus,
+  Upload,
+  Trash2,
+} from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Tabs } from '@/components/ui/tabs'
+import { Toggle } from '@/components/ui/toggle'
+import { Spinner } from '@/components/ui/spinner'
+import { Label, Input, Select, Textarea } from '@/components/ui/input'
+import { TONE_OPTIONS, LANGUAGE_OPTIONS } from '@/lib/constants'
+import { IntegrationTab } from '@/components/sites/integration-tab'
 
 interface Site {
   id: string
@@ -27,13 +48,18 @@ interface KnowledgeChunk {
   chunk_index: number
 }
 
+type TabId = 'settings' | 'knowledge' | 'apikey' | 'integration'
+
 export default function SiteSettingsPage() {
   const { siteId } = useParams()
+  const id = siteId as string
+
   const [site, setSite] = useState<Site | null>(null)
   const [knowledge, setKnowledge] = useState<KnowledgeChunk[]>([])
   const [newKB, setNewKB] = useState('')
-  const [tab, setTab] = useState<'settings' | 'knowledge' | 'apikey'>('settings')
+  const [tab, setTab] = useState<TabId>('settings')
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [apiKey, setApiKey] = useState<string | null>(null)
   const [showKey, setShowKey] = useState(false)
   const [regenLoading, setRegenLoading] = useState(false)
@@ -41,19 +67,27 @@ export default function SiteSettingsPage() {
   useEffect(() => {
     loadSite()
     loadKnowledge()
-  }, [])
+  }, [id])
 
   const loadSite = async () => {
-    const res = await sitesApi.list()
-    const found = res.data.find((s: Site) => s.id === siteId)
-    setSite(found)
+    setLoading(true)
+    try {
+      const res = await sitesApi.get(id)
+      setSite(res.data)
+    } catch {
+      toast.error('Site not found')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadKnowledge = async () => {
     try {
-      const res = await knowledgeApi.list(siteId as string)
+      const res = await knowledgeApi.list(id)
       setKnowledge(res.data)
-    } catch {}
+    } catch {
+      /* empty */
+    }
   }
 
   const handleSave = async () => {
@@ -61,6 +95,8 @@ export default function SiteSettingsPage() {
     setSaving(true)
     try {
       await sitesApi.update(site.id, {
+        name: site.name.trim(),
+        domain: site.domain.trim(),
         tone: site.tone,
         language: site.language,
         custom_instructions: site.custom_instructions,
@@ -70,9 +106,9 @@ export default function SiteSettingsPage() {
         spam_threshold: site.spam_threshold,
         approve_threshold: site.approve_threshold,
       })
-      toast.success('تنظیمات ذخیره شد')
+      toast.success('Settings saved')
     } catch {
-      toast.error('خطا در ذخیره')
+      toast.error('Failed to save settings')
     } finally {
       setSaving(false)
     }
@@ -81,12 +117,12 @@ export default function SiteSettingsPage() {
   const handleAddKB = async () => {
     if (!newKB.trim()) return
     try {
-      await knowledgeApi.add(siteId as string, newKB, 'manual')
+      await knowledgeApi.add(id, newKB, 'manual')
       setNewKB('')
       loadKnowledge()
-      toast.success('دانش اضافه شد')
+      toast.success('Knowledge added')
     } catch {
-      toast.error('خطا')
+      toast.error('Failed to add knowledge')
     }
   }
 
@@ -94,32 +130,35 @@ export default function SiteSettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
     try {
-      await knowledgeApi.upload(siteId as string, file)
+      await knowledgeApi.upload(id, file)
       loadKnowledge()
-      toast.success('فایل آپلود شد')
+      toast.success('File uploaded')
     } catch {
-      toast.error('خطا در آپلود')
+      toast.error('Upload failed')
+    }
+    e.target.value = ''
+  }
+
+  const handleDeleteChunk = async (chunkId: string) => {
+    try {
+      await knowledgeApi.delete(id, chunkId)
+      setKnowledge((k) => k.filter((c) => c.id !== chunkId))
+      toast.success('Removed')
+    } catch {
+      toast.error('Delete failed')
     }
   }
 
-  const handleDeleteChunk = async (id: string) => {
-    try {
-      await knowledgeApi.delete(siteId as string, id)
-      setKnowledge(k => k.filter(c => c.id !== id))
-      toast.success('حذف شد')
-    } catch {}
-  }
-
   const handleRegenKey = async () => {
-    if (!confirm('مطمئنی؟ کلید قدیمی دیگه کار نمی‌کنه!')) return
+    if (!confirm('Regenerate API key? The old key will stop working immediately.')) return
     setRegenLoading(true)
     try {
-      const res = await sitesApi.regenerateKey(siteId as string)
+      const res = await sitesApi.regenerateKey(id)
       setApiKey(res.data.api_key)
       setShowKey(true)
-      toast.success('کلید جدید ساخته شد')
+      toast.success('New API key generated')
     } catch {
-      toast.error('خطا در ساخت کلید جدید')
+      toast.error('Could not regenerate key')
     } finally {
       setRegenLoading(false)
     }
@@ -128,220 +167,282 @@ export default function SiteSettingsPage() {
   const handleCopyKey = () => {
     if (!apiKey) return
     navigator.clipboard.writeText(apiKey)
-    toast.success('کپی شد!')
+    toast.success('Copied to clipboard')
   }
 
-  if (!site) return <div className="p-8 text-center text-gray-400">در حال بارگذاری...</div>
+  if (loading) {
+    return <Spinner label="Loading site settings…" />
+  }
+
+  if (!site) {
+    return (
+      <div className="py-20 text-center text-slate-500">
+        Site not found.{' '}
+        <a href="/dashboard" className="text-violet-600 hover:underline">
+          Back to overview
+        </a>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-500 hover:text-indigo-600 transition">
-            <ArrowRight size={20} />
-          </Link>
-          <h1 className="text-lg font-bold">{site.name}</h1>
-          <span className="text-sm text-gray-400">{site.domain}</span>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title={site.name}
+        description={site.domain}
+        backHref="/dashboard"
+        backLabel="All sites"
+      />
 
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          {([
-            { key: 'settings', label: '⚙️ تنظیمات' },
-            { key: 'knowledge', label: '📚 پایگاه دانش' },
-            { key: 'apikey', label: '🔑 API Key' },
-          ] as const).map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-                tab === t.key ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { id: 'settings', label: 'Settings', icon: <Settings2 className="h-4 w-4" /> },
+            { id: 'knowledge', label: 'Knowledge', icon: <BookOpen className="h-4 w-4" /> },
+            { id: 'apikey', label: 'API Key', icon: <Key className="h-4 w-4" /> },
+            { id: 'integration', label: 'Integration', icon: <Plug className="h-4 w-4" /> },
+          ]}
+        />
 
-        {/* ─── API Key Tab ─────────────────────────────────────────── */}
-        {tab === 'apikey' && (
-          <div className="space-y-4">
-            <div className="card">
-              <h3 className="font-semibold mb-1">API Key سایت</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                این کلید رو توی افزونه وردپرس یا JS Widget وارد کن.
-              </p>
-
-              {apiKey ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                    <code className="flex-1 text-sm font-mono text-gray-800 break-all" dir="ltr">
-                      {showKey ? apiKey : '•'.repeat(40)}
-                    </code>
-                    <button onClick={() => setShowKey(v => !v)} className="text-gray-400 hover:text-gray-600 shrink-0">
-                      {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                    <button onClick={handleCopyKey} className="text-gray-400 hover:text-indigo-600 shrink-0">
-                      <Copy size={16} />
-                    </button>
-                  </div>
-                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                    ⚠️ این کلید رو الان کپی کن. اگه صفحه رو ببندی دیگه نمی‌تونی ببینیش!
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg px-4 py-6 text-center">
-                  <p className="text-gray-500 text-sm mb-1">کلید فعلی مخفی است.</p>
-                  <p className="text-gray-400 text-xs">برای دیدن کلید جدید، از دکمه زیر استفاده کن.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="card border-red-100">
-              <h3 className="font-semibold text-red-700 mb-1">ساخت کلید جدید</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                با این کار کلید قدیمی <strong>باطل</strong> می‌شه و باید توی افزونه وردپرس هم بروزرسانی بشه.
-              </p>
-              <button
-                onClick={handleRegenKey}
-                disabled={regenLoading}
-                className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition disabled:opacity-50"
-              >
-                <RefreshCw size={14} className={regenLoading ? 'animate-spin' : ''} />
-                {regenLoading ? 'در حال ساخت...' : 'ساخت کلید جدید'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── Settings Tab ─────────────────────────────────────────── */}
-        {tab === 'settings' && (
-          <div className="space-y-4">
-            <div className="card">
-              <h3 className="font-semibold mb-4">تنظیمات AI</h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+        <div className="mt-6 space-y-5">
+          {tab === 'settings' && (
+            <>
+              <Card>
+                <h3 className="text-sm font-semibold text-slate-900">General</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Update your site name and domain shown in the dashboard.
+                </p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">لحن</label>
-                    <select
-                      value={site.tone}
-                      onChange={e => setSite(s => s ? { ...s, tone: e.target.value } : s)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                    >
-                      <option value="friendly">دوستانه</option>
-                      <option value="formal">رسمی</option>
-                      <option value="professional">حرفه‌ای</option>
-                    </select>
+                    <Label htmlFor="site-name">Site name</Label>
+                    <Input
+                      id="site-name"
+                      value={site.name}
+                      onChange={(e) => setSite((s) => (s ? { ...s, name: e.target.value } : s))}
+                      placeholder="My Store"
+                      required
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">زبان</label>
-                    <select
-                      value={site.language}
-                      onChange={e => setSite(s => s ? { ...s, language: e.target.value } : s)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                    >
-                      <option value="fa">فارسی</option>
-                      <option value="en">English</option>
-                    </select>
+                    <Label htmlFor="site-domain">Domain</Label>
+                    <Input
+                      id="site-domain"
+                      value={site.domain}
+                      onChange={(e) => setSite((s) => (s ? { ...s, domain: e.target.value } : s))}
+                      placeholder="example.com"
+                      required
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">دستورالعمل خاص (اختیاری)</label>
-                  <textarea
-                    value={site.custom_instructions || ''}
-                    onChange={e => setSite(s => s ? { ...s, custom_instructions: e.target.value } : s)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 resize-none"
-                    rows={3}
-                    placeholder="مثال: اگه کسی از قیمت پرسید، بگو با پشتیبانی تماس بگیره"
+              </Card>
+
+              <Card>
+                <h3 className="text-sm font-semibold text-slate-900">AI behavior</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  How the model writes replies and which language it uses.
+                </p>
+                <div className="mt-5 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="tone">Reply tone</Label>
+                      <Select
+                        id="tone"
+                        value={site.tone}
+                        onChange={(e) => setSite((s) => (s ? { ...s, tone: e.target.value } : s))}
+                      >
+                        {TONE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="language">Language</Label>
+                      <Select
+                        id="language"
+                        value={site.language}
+                        onChange={(e) => setSite((s) => (s ? { ...s, language: e.target.value } : s))}
+                      >
+                        {LANGUAGE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="instructions">Custom instructions (optional)</Label>
+                    <Textarea
+                      id="instructions"
+                      value={site.custom_instructions || ''}
+                      onChange={(e) =>
+                        setSite((s) => (s ? { ...s, custom_instructions: e.target.value } : s))
+                      }
+                      placeholder="e.g. For pricing questions, ask users to contact support."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <h3 className="text-sm font-semibold text-slate-900">Moderation</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Control automatic approval, replies, and spam filtering.
+                </p>
+                <div className="mt-4 space-y-2">
+                  <Toggle
+                    checked={site.auto_reply}
+                    onChange={(v) => setSite((s) => (s ? { ...s, auto_reply: v } : s))}
+                    label="Auto-reply"
+                    description="Post AI-generated replies to comments"
+                  />
+                  <Toggle
+                    checked={site.auto_approve}
+                    onChange={(v) => setSite((s) => (s ? { ...s, auto_approve: v } : s))}
+                    label="Auto-approve"
+                    description="Approve legitimate comments without manual review"
+                  />
+                  <Toggle
+                    checked={site.auto_spam}
+                    onChange={(v) => setSite((s) => (s ? { ...s, auto_spam: v } : s))}
+                    label="Spam filter"
+                    description="Mark high spam-score comments as spam"
                   />
                 </div>
-              </div>
-            </div>
+              </Card>
 
-            <div className="card">
-              <h3 className="font-semibold mb-4">مدیریت کامنت‌ها</h3>
-              <div className="space-y-3">
-                {[
-                  { key: 'auto_reply', label: 'پاسخ خودکار', desc: 'AI به کامنت‌ها جواب دهد' },
-                  { key: 'auto_approve', label: 'تأیید خودکار', desc: 'کامنت‌های معتبر نیاز به تأیید دستی ندارند' },
-                  { key: 'auto_spam', label: 'فیلتر اسپم', desc: 'کامنت‌های اسپم به‌طور خودکار فیلتر شوند' },
-                ].map(({ key, label, desc }) => (
-                  <label key={key} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-50">
-                    <div>
-                      <div className="font-medium text-sm">{label}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
-                    </div>
+              <Button onClick={handleSave} loading={saving} className="w-full" size="lg">
+                Save changes
+              </Button>
+            </>
+          )}
+
+          {tab === 'knowledge' && (
+            <>
+              <Card>
+                <h3 className="text-sm font-semibold text-slate-900">Add knowledge</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Policies, FAQs, and product info the AI uses when replying.
+                </p>
+                <Textarea
+                  className="mt-4"
+                  value={newKB}
+                  onChange={(e) => setNewKB(e.target.value)}
+                  placeholder="Paste text your AI should know about your business…"
+                  rows={5}
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button onClick={handleAddKB} disabled={!newKB.trim()}>
+                    <Plus className="h-4 w-4" />
+                    Add text
+                  </Button>
+                  <label className="inline-flex cursor-pointer">
+                    <span className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                      <Upload className="h-4 w-4" />
+                      Upload .txt / .md
+                    </span>
                     <input
-                      type="checkbox"
-                      checked={(site as any)[key]}
-                      onChange={e => setSite(s => s ? { ...s, [key]: e.target.checked } : s)}
-                      className="w-4 h-4 accent-indigo-600"
+                      type="file"
+                      accept=".txt,.md"
+                      onChange={handleUpload}
+                      className="hidden"
                     />
                   </label>
-                ))}
-              </div>
-            </div>
+                </div>
+              </Card>
 
-            <button onClick={handleSave} disabled={saving} className="btn-primary w-full">
-              {saving ? 'در حال ذخیره...' : 'ذخیره تنظیمات'}
-            </button>
-          </div>
-        )}
-
-        {/* ─── Knowledge Tab ─────────────────────────────────────────── */}
-        {tab === 'knowledge' && (
-          <div className="space-y-4">
-            <div className="card">
-              <h3 className="font-semibold mb-3">افزودن دانش</h3>
-              <textarea
-                value={newKB}
-                onChange={e => setNewKB(e.target.value)}
-                placeholder="اطلاعاتی که AI باید بداند را اینجا وارد کنید..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 resize-none"
-                rows={4}
-              />
-              <div className="flex gap-2 mt-2">
-                <button onClick={handleAddKB} className="btn-primary flex items-center gap-1">
-                  <Plus size={14} /> افزودن متن
-                </button>
-                <label className="btn-secondary flex items-center gap-1 cursor-pointer">
-                  <Upload size={14} /> آپلود فایل (.txt)
-                  <input type="file" accept=".txt,.md" onChange={handleUpload} className="hidden" />
-                </label>
-              </div>
-            </div>
-
-            {knowledge.length === 0 ? (
-              <div className="card text-center py-8 text-gray-400">
-                پایگاه دانش خالی است. اطلاعات سایت خود را اضافه کنید.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {knowledge.map((chunk) => (
-                  <div key={chunk.id} className="card py-3 px-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-indigo-500 mb-1 font-medium">
-                          {chunk.source_name} #{chunk.chunk_index + 1}
+              {knowledge.length === 0 ? (
+                <Card className="text-center py-10 text-sm text-slate-500">
+                  No knowledge yet. Add content so replies stay accurate and on-brand.
+                </Card>
+              ) : (
+                <ul className="space-y-2">
+                  {knowledge.map((chunk) => (
+                    <li key={chunk.id}>
+                      <Card padding className="!p-4">
+                        <div className="flex gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-violet-600">
+                              {chunk.source_name} · chunk {chunk.chunk_index + 1}
+                            </p>
+                            <p className="mt-1 line-clamp-3 text-sm text-slate-700">{chunk.content}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteChunk(chunk.id)}
+                            aria-label="Delete chunk"
+                          >
+                            <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                          </Button>
                         </div>
-                        <p className="text-sm text-gray-700 line-clamp-3">{chunk.content}</p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteChunk(chunk.id)}
-                        className="text-gray-400 hover:text-red-500 transition shrink-0"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {tab === 'apikey' && (
+            <>
+              <Card>
+                <h3 className="text-sm font-semibold text-slate-900">Integration key</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Use this key in the WordPress plugin or your API client as{' '}
+                  <code className="rounded bg-slate-100 px-1 text-xs">Authorization: Bearer …</code>
+                </p>
+
+                {apiKey ? (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <code className="flex-1 break-all font-mono text-sm text-slate-800">
+                        {showKey ? apiKey : '•'.repeat(36)}
+                      </code>
+                      <Button variant="ghost" size="sm" onClick={() => setShowKey((v) => !v)} aria-label="Toggle visibility">
+                        {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleCopyKey} aria-label="Copy">
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Copy this key now. You won&apos;t be able to view it again after leaving this page.
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-    </div>
+                ) : (
+                  <p className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    Your current key is hidden. Regenerate to reveal a new one.
+                  </p>
+                )}
+              </Card>
+
+              <Card className="border-red-100">
+                <h3 className="text-sm font-semibold text-red-800">Regenerate key</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Invalidates the previous key. Update the WordPress plugin immediately.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4 border-red-200 text-red-700 hover:bg-red-50"
+                  onClick={handleRegenKey}
+                  loading={regenLoading}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Generate new key
+                </Button>
+              </Card>
+            </>
+          )}
+
+          {tab === 'integration' && <IntegrationTab siteId={id} />}
+        </div>
+      </div>
+    </>
   )
 }

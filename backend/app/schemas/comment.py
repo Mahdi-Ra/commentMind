@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -11,6 +11,10 @@ class CommentSubmit(BaseModel):
     content: str
     post_title: Optional[str] = None
     post_url: Optional[str] = None
+    product_sku: Optional[str] = None
+    product_price: Optional[str] = None
+    product_stock_status: Optional[str] = None
+    product_context: Optional[str] = None
 
 
 class CommentResult(BaseModel):
@@ -29,6 +33,9 @@ class CommentOut(BaseModel):
     author_name: Optional[str]
     content: str
     post_title: Optional[str]
+    product_sku: Optional[str]
+    product_price: Optional[str]
+    product_stock_status: Optional[str]
     status: str
     intent: Optional[str]
     spam_score: Optional[float]
@@ -48,3 +55,8 @@ class CommentStats(BaseModel):
     replied: int
     uncertain: int
     today: int
+
+
+class CommentModerateIn(BaseModel):
+    action: str = Field(..., pattern="^(approve|spam|reply|pending|uncertain)$")
+    ai_reply: Optional[str] = None

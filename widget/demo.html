@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CommentMind Widget Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1 { color: #1e293b; }
+    p { color: #64748b; }
+  </style>
+</head>
+<body>
+  <h1>Product page demo</h1>
+  <p>Embed the CommentMind widget below on any page.</p>
+
+  <div id="commentmind-root"></div>
+  <script
+    src="http://localhost:8000/static/widget.js"
+    data-api-key="YOUR_API_KEY_HERE"
+    data-api-url="http://localhost:8000"
+    data-page-title="Product Demo"
+    data-page-url="http://localhost:8080/demo.html"
+    async
+  ></script>
+</body>
+</html>

@@ -7,6 +7,7 @@ from app.models.user import User
 from app.models.site import Site
 from app.services.site_service import get_site_by_api_key
 from sqlalchemy import select
+from datetime import datetime, timezone
 
 bearer_scheme = HTTPBearer()
 
@@ -26,6 +27,10 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if user.trial_ends_at and user.trial_ends_at <= datetime.now(timezone.utc).replace(tzinfo=None):
+        user.plan = "free"
+        user.trial_plan = None
+        user.trial_ends_at = None
     return user
 
 
