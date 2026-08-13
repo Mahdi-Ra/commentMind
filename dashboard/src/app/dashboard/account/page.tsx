@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { User, Lock, Zap } from 'lucide-react'
+import { Eye, EyeOff, User, Lock, Zap } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -168,38 +168,32 @@ export default function AccountPage() {
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
               <Label htmlFor="currentPassword">Current password</Label>
-              <Input
+              <PasswordInput
                 id="currentPassword"
-                type="password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
                 autoComplete="current-password"
+                onChange={setCurrentPassword}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="newPassword">New password</Label>
-                <Input
+                <PasswordInput
                   id="newPassword"
-                  type="password"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
                   minLength={8}
                   autoComplete="new-password"
+                  onChange={setNewPassword}
                 />
               </div>
               <div>
                 <Label htmlFor="confirmPassword">Confirm new password</Label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
                   minLength={8}
                   autoComplete="new-password"
+                  onChange={setConfirmPassword}
                 />
               </div>
             </div>
@@ -210,5 +204,44 @@ export default function AccountPage() {
         </Card>
       </div>
     </>
+  )
+}
+
+function PasswordInput({
+  id,
+  value,
+  onChange,
+  autoComplete,
+  minLength,
+}: {
+  id: string
+  value: string
+  onChange: (value: string) => void
+  autoComplete: string
+  minLength?: number
+}) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        minLength={minLength}
+        autoComplete={autoComplete}
+        className="pr-11"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-slate-600"
+        aria-label={visible ? 'Hide password' : 'Show password'}
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
   )
 }

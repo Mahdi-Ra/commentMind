@@ -4,12 +4,13 @@ import { Suspense, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
+import { authApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { Logo } from '@/components/brand/logo'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Sparkles, Shield, Zap } from 'lucide-react'
+import { Eye, EyeOff, Sparkles, Shield, Zap } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 export default function AuthPage() {
@@ -21,19 +22,47 @@ export default function AuthPage() {
 }
 
 function AuthContent() {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const searchParams = useSearchParams()
+  const resetToken = searchParams.get('reset_token')
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>(
+    resetToken ? 'reset' : 'login',
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuthStore()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
+      if (mode === 'forgot') {
+        await authApi.forgotPassword(email)
+        toast.success('If an account exists, a reset link has been sent.')
+        setMode('login')
+        return
+      }
+      if (mode === 'reset') {
+        if (!resetToken) throw new Error('Missing reset token')
+        if (password.length < 8) {
+          toast.error('Password must be at least 8 characters')
+          return
+        }
+        if (password !== confirmPassword) {
+          toast.error('Passwords do not match')
+          return
+        }
+        await authApi.resetPassword(resetToken, password)
+        toast.success('Password reset successfully. You can sign in now.')
+        setPassword('')
+        setConfirmPassword('')
+        setMode('login')
+        router.replace('/auth')
+        return
+      }
       if (mode === 'login') {
         await login(email, password)
       } else {
@@ -94,22 +123,31 @@ function AuthContent() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="mb-8 text-center lg:text-left">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-              {mode === 'login' ? 'Welcome back' : 'Create your account'}
+              {mode === 'login' && 'Welcome back'}
+              {mode === 'register' && 'Create your account'}
+              {mode === 'forgot' && 'Reset your password'}
+              {mode === 'reset' && 'Choose a new password'}
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              {mode === 'login'
-                ? 'Sign in to manage your sites and comments.'
-                : 'Start automating comment moderation today.'}
+              {mode === 'login' && 'Sign in to manage your sites and comments.'}
+              {mode === 'register' && 'Start automating comment moderation today.'}
+              {mode === 'forgot' && 'Enter your email and we will send reset instructions.'}
+              {mode === 'reset' && 'Use a strong password with at least 8 characters.'}
             </p>
           </div>
 
           <Card>
-            <div className="mb-6 flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+            {mode !== 'forgot' && mode !== 'reset' && (
+              <div className="mb-6 flex rounded-lg border border-slate-200 bg-slate-50 p-1">
               {(['login', 'register'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setMode(m)}
+                  onClick={() => {
+                    setMode(m)
+                    setPassword('')
+                    setConfirmPassword('')
+                  }}
                   className={cn(
                     'flex-1 rounded-md py-2 text-sm font-medium transition',
                     mode === m
@@ -120,7 +158,8 @@ function AuthContent() {
                   {m === 'login' ? 'Sign in' : 'Sign up'}
                 </button>
               ))}
-            </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
@@ -136,7 +175,8 @@ function AuthContent() {
                   />
                 </div>
               )}
-              <div>
+              {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+                <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -148,24 +188,97 @@ function AuthContent() {
                   autoComplete="email"
                 />
               </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
+              )}
+              {mode !== 'forgot' && (
+                <PasswordField
                   id="password"
-                  type="password"
+                  label={mode === 'reset' ? 'New password' : 'Password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
+                  onChange={setPassword}
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
-              </div>
+              )}
+              {mode === 'reset' && (
+                <PasswordField
+                  id="confirmPassword"
+                  label="Confirm new password"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  autoComplete="new-password"
+                />
+              )}
               <Button type="submit" loading={loading} className="w-full mt-2" size="lg">
-                {mode === 'login' ? 'Sign in' : 'Create account'}
+                {mode === 'login' && 'Sign in'}
+                {mode === 'register' && 'Create account'}
+                {mode === 'forgot' && 'Send reset link'}
+                {mode === 'reset' && 'Reset password'}
               </Button>
             </form>
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => setMode('forgot')}
+                className="mt-4 w-full text-center text-sm font-medium text-violet-600 hover:text-violet-700"
+              >
+                Forgot your password?
+              </button>
+            )}
+            {(mode === 'forgot' || mode === 'reset') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login')
+                  router.replace('/auth')
+                }}
+                className="mt-4 w-full text-center text-sm font-medium text-slate-500 hover:text-slate-700"
+              >
+                Back to sign in
+              </button>
+            )}
           </Card>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function PasswordField({
+  id,
+  label,
+  value,
+  onChange,
+  autoComplete,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  autoComplete: string
+}) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required
+          placeholder="••••••••"
+          autoComplete={autoComplete}
+          className="pr-11"
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-slate-600"
+          aria-label={visible ? 'Hide password' : 'Show password'}
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
       </div>
     </div>
   )

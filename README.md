@@ -78,14 +78,15 @@ docker compose exec backend celery -A app.worker.celery_app worker --loglevel=in
 
 ## WordPress Plugin
 
-1. Zip `wordpress-plugin/commentmind-ai`
+1. Download `dashboard/public/downloads/commentmind-ai-wordpress-plugin.zip` from the website or build it from `wordpress-plugin/commentmind-ai`
 2. Upload it in WordPress Admin → Plugins → Add New → Upload
 3. Activate the plugin
 4. Open Settings → CommentMind AI
 5. Add the site API key from the dashboard
-6. Set API URL to your backend URL
+6. Set API URL to your backend URL, for example `https://api.commentmind.website`
 
 The plugin can send WooCommerce product context such as SKU, price, stock status, and product title when comments are posted on product pages.
+Supported AI reply languages are English, Persian, Arabic, Turkish, and German.
 
 ## API Examples
 

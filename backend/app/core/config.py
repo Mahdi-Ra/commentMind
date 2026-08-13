@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     SECRET_KEY: str = "change-me-in-production"
     PUBLIC_BASE_URL: str = "http://localhost:8000"
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
 
     # Database
     ASYNC_DATABASE_URL: str = "postgresql+asyncpg://commentmind:commentmind@db:5432/commentmind"
@@ -36,6 +37,14 @@ class Settings(BaseSettings):
     USDT_TRC20_ADDRESS: str = ""
     TRX_ADDRESS: str = ""
     PAYMENT_ADMIN_EMAILS: str = ""
+
+    # Optional SMTP for password reset emails
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_USE_TLS: bool = True
 
     class Config:
         env_file = ".env"

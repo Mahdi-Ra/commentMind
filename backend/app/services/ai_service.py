@@ -14,6 +14,14 @@ TONE_MAP = {
 INTENT_LABELS = ["question", "complaint", "praise", "spam", "other"]
 SENTIMENT_LABELS = ["positive", "negative", "neutral"]
 
+LANGUAGE_MAP = {
+    "en": "English",
+    "fa": "Persian (Farsi)",
+    "ar": "Arabic",
+    "tr": "Turkish",
+    "de": "German",
+}
+
 
 async def analyze_comment(
     content: str,
@@ -90,7 +98,7 @@ def _build_system_prompt(
     custom_instructions: str,
 ) -> str:
     tone_desc = TONE_MAP.get(tone, TONE_MAP["friendly"])
-    lang_desc = "English"
+    lang_desc = LANGUAGE_MAP.get(language, LANGUAGE_MAP["en"])
 
     prompt = f"""You are the AI comment assistant for "{site_name}".
 
@@ -138,7 +146,7 @@ async def generate_standalone_reply(
 ) -> str:
     """Generate just a reply for a comment"""
     tone_desc = TONE_MAP.get(tone, TONE_MAP["friendly"])
-    lang_desc = "English"
+    lang_desc = LANGUAGE_MAP.get(language, LANGUAGE_MAP["en"])
 
     response = await client.chat.completions.create(
         model=settings.OPENAI_MODEL,

@@ -10,7 +10,7 @@ const LINKS = {
   ],
   Developers: [
     { label: 'API docs', href: '/docs' },
-    { label: 'WordPress plugin', href: '#' },
+    { label: 'WordPress plugin', href: '/downloads/commentmind-ai-wordpress-plugin.zip' },
     { label: 'JS widget', href: '#' },
     { label: 'Status', href: '#' },
   ],

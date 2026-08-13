@@ -9,7 +9,7 @@ class CM_Settings {
 
     private array $defaults = [
         'api_key'          => '',
-        'api_url'          => 'https://api.commentmind.ai',
+        'api_url'          => 'https://api.commentmind.website',
         'auto_reply'       => true,
         'auto_approve'     => true,
         'auto_spam'        => true,

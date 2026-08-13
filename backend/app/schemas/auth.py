@@ -28,6 +28,19 @@ class UserPasswordChange(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetResponse(BaseModel):
+    message: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class UserOut(BaseModel):
     id: str
     email: str

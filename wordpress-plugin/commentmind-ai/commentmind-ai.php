@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: CommentMind AI
- * Plugin URI:  https://commentmind.ai
+ * Plugin URI:  https://commentmind.website
  * Description: AI-powered comment moderation, replies, approval, and spam filtering.
  * Version:     1.0.0
  * Author:      CommentMind

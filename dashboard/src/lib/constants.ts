@@ -6,6 +6,10 @@ export const TONE_OPTIONS = [
 
 export const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
+  { value: 'fa', label: 'Persian' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'tr', label: 'Turkish' },
+  { value: 'de', label: 'German' },
 ] as const
 
 export const STATUS_LABELS: Record<string, string> = {

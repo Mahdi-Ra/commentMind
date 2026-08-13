@@ -15,7 +15,7 @@ const FAQS = [
   },
   {
     q: 'What languages does it support?',
-    a: 'English is the default product language. Additional languages can be added later for specific customer segments.',
+    a: 'English, Persian, Arabic, Turkish, and German are supported for AI replies.',
   },
   {
     q: 'Can I review AI replies before they go live?',

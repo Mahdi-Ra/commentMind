@@ -28,14 +28,15 @@ class CM_Admin {
     public static function sanitize_settings(array $input): array {
         $clean = [];
         $clean['api_key']       = sanitize_text_field($input['api_key'] ?? '');
-        $clean['api_url']       = esc_url_raw($input['api_url'] ?? 'https://api.commentmind.ai');
+        $clean['api_url']       = esc_url_raw($input['api_url'] ?? 'https://api.commentmind.website');
         $clean['auto_reply']    = ! empty($input['auto_reply']);
         $clean['auto_approve']  = ! empty($input['auto_approve']);
         $clean['auto_spam']     = ! empty($input['auto_spam']);
         $clean['reply_as_user'] = absint($input['reply_as_user'] ?? 0);
         $clean['tone']          = in_array($input['tone'] ?? '', ['friendly', 'formal', 'professional'])
                                   ? $input['tone'] : 'friendly';
-        $clean['language']      = 'en';
+        $clean['language']      = in_array($input['language'] ?? '', ['en', 'fa', 'ar', 'tr', 'de'])
+                                  ? $input['language'] : 'en';
         return $clean;
     }
 
@@ -105,7 +106,23 @@ class CM_Admin {
                             <th>Reply language</th>
                             <td>
                                 <select name="commentmind_settings[language]">
-                                    <option value="en" selected>English</option>
+                                    <?php
+                                    $languages = [
+                                        'en' => 'English',
+                                        'fa' => 'Persian',
+                                        'ar' => 'Arabic',
+                                        'tr' => 'Turkish',
+                                        'de' => 'German',
+                                    ];
+                                    foreach ($languages as $val => $label) {
+                                        printf(
+                                            '<option value="%s" %s>%s</option>',
+                                            esc_attr($val),
+                                            selected($settings->get('language'), $val, false),
+                                            esc_html($label)
+                                        );
+                                    }
+                                    ?>
                                 </select>
                             </td>
                         </tr>
