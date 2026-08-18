@@ -10,12 +10,14 @@ class CM_Admin {
     }
 
     public static function register_menu(): void {
-        add_options_page(
+        add_menu_page(
             'CommentMind AI',
             'CommentMind AI',
             'manage_options',
             'commentmind-ai',
-            [__CLASS__, 'render_settings_page']
+            [__CLASS__, 'render_settings_page'],
+            'dashicons-format-chat',
+            58
         );
     }
 
