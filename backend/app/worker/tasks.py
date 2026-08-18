@@ -54,6 +54,7 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
     from app.models.site import Site
     from app.models.knowledge import KnowledgeChunk
     from app.services.ai_service import analyze_comment
+    from app.services.comment_service import determine_comment_status
     from app.services.embedding_service import get_relevant_chunks
 
     async with AsyncSessionLocal() as db:
@@ -89,16 +90,7 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
             )
 
             # Determine final status
-            spam_score = float(analysis.get("spam_score", 0.1))
-
-            if spam_score >= site.spam_threshold and site.auto_spam:
-                status = "spam"
-            elif spam_score < (1 - site.approve_threshold) and site.auto_approve:
-                status = "approved"
-                if analysis.get("reply") and site.auto_reply:
-                    status = "replied"
-            else:
-                status = "uncertain"
+            status, spam_score = determine_comment_status(site, analysis)
 
             # Update comment in DB
             comment.status = status

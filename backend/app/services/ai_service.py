@@ -55,6 +55,7 @@ Comment: "{content}"
 Return exactly this JSON shape with no extra text:
 {{
   "spam_score": <number between 0 and 1 indicating spam probability>,
+  "approval_confidence": <number between 0 and 1 indicating confidence the comment is safe to publish>,
   "intent": <"question"|"complaint"|"praise"|"spam"|"other">,
   "sentiment": <"positive"|"negative"|"neutral">,
   "should_reply": <true|false>,
@@ -81,6 +82,7 @@ Return exactly this JSON shape with no extra text:
     
     # Ensure defaults
     result.setdefault("spam_score", 0.1)
+    result.setdefault("approval_confidence", max(0.0, 1 - float(result["spam_score"])))
     result.setdefault("intent", "other")
     result.setdefault("sentiment", "neutral")
     result.setdefault("should_reply", True)
@@ -104,9 +106,10 @@ def _build_system_prompt(
 
 ## Your tasks
 1. Estimate whether the comment is spam (spam_score).
-2. Detect the writer's intent (intent).
-3. Detect comment sentiment (sentiment).
-4. Write an appropriate reply when needed.
+2. Estimate confidence the comment is legitimate and safe to publish (approval_confidence).
+3. Detect the writer's intent (intent).
+4. Detect comment sentiment (sentiment).
+5. Write an appropriate reply when needed.
 
 ## Reply tone: {tone_desc}
 ## Reply language: {lang_desc}
@@ -116,6 +119,11 @@ def _build_system_prompt(
 - Abusive content should usually score above 0.85.
 - Irrelevant content should usually score above 0.75.
 - Genuine customer comments should usually score below 0.3.
+
+## Approval confidence rules
+- Clear, genuine questions and ordinary constructive comments should usually be at least 0.9.
+- Comments that are ambiguous, potentially harmful, or missing important context should be below 0.9.
+- Spam, abusive, or clearly irrelevant comments should be below 0.2.
 
 ## Reply rules
 - If the comment asks a question, answer it.

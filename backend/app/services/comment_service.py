@@ -11,6 +11,25 @@ from app.services.ai_service import analyze_comment
 from app.services.embedding_service import get_relevant_chunks
 
 
+def determine_comment_status(site: Site, analysis: dict) -> tuple[str, float]:
+    """Apply one moderation policy for both synchronous and worker processing."""
+    spam_score = max(0.0, min(1.0, float(analysis.get("spam_score", 0.1))))
+    approval_confidence = max(
+        0.0,
+        min(1.0, float(analysis.get("approval_confidence", 1 - spam_score))),
+    )
+
+    if spam_score >= site.spam_threshold and site.auto_spam:
+        return "spam", spam_score
+
+    if site.auto_approve and approval_confidence >= site.approve_threshold:
+        if analysis.get("reply") and site.auto_reply:
+            return "replied", spam_score
+        return "approved", spam_score
+
+    return "uncertain", spam_score
+
+
 async def process_comment(
     db: AsyncSession,
     site: Site,
@@ -47,16 +66,7 @@ async def process_comment(
     )
 
     # 3. Determine status
-    spam_score = float(analysis.get("spam_score", 0.1))
-
-    if spam_score >= site.spam_threshold and site.auto_spam:
-        status = "spam"
-    elif spam_score < (1 - site.approve_threshold) and site.auto_approve:
-        status = "approved"
-        if analysis.get("reply") and site.auto_reply:
-            status = "replied"
-    else:
-        status = "uncertain"
+    status, spam_score = determine_comment_status(site, analysis)
 
     now = datetime.now(timezone.utc)
 
