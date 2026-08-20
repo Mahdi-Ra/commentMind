@@ -68,7 +68,8 @@ async def process_comment(
     # 3. Determine status
     status, spam_score = determine_comment_status(site, analysis)
 
-    now = datetime.now(timezone.utc)
+    # Database columns use TIMESTAMP WITHOUT TIME ZONE; store UTC consistently.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # 4. Save or update
     if existing_comment is not None:

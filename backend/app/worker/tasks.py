@@ -99,11 +99,10 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
             comment.sentiment = analysis.get("sentiment")
             comment.ai_reply = analysis.get("reply")
             comment.reply_sent = status == "replied"
-            comment.reply_sent_at = (
-                datetime.now(timezone.utc) if status == "replied" else None
-            )
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            comment.reply_sent_at = now if status == "replied" else None
             comment.processing_time_ms = analysis.get("processing_time_ms")
-            comment.processed_at = datetime.now(timezone.utc)
+            comment.processed_at = now
 
             await db.commit()
 
