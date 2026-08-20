@@ -85,33 +85,40 @@ async def get_relevant_chunks(
     if query_vec is not None:
         pg_vec = _vector_to_pg(query_vec)
         try:
-            result = await db.execute(
-                text(
-                    """
-                    SELECT content
-                    FROM knowledge_chunks
-                    WHERE site_id = :site_id
-                      AND embedding IS NOT NULL
-                    ORDER BY embedding::vector(1536) <=> :query_vec::vector(1536)
-                    LIMIT :limit
-                    """
-                ),
-                {"site_id": site_id, "query_vec": pg_vec, "limit": limit},
-            )
-            rows = result.fetchall()
-            if rows:
-                return [row[0] for row in rows]
+            # A failed vector expression aborts a PostgreSQL transaction. Keep it
+            # in a savepoint so comment moderation can continue with a fallback.
+            async with db.begin_nested():
+                result = await db.execute(
+                    text(
+                        """
+                        SELECT content
+                        FROM knowledge_chunks
+                        WHERE site_id = :site_id
+                          AND embedding IS NOT NULL
+                        ORDER BY embedding::vector(1536) <=> :query_vec::vector(1536)
+                        LIMIT :limit
+                        """
+                    ),
+                    {"site_id": site_id, "query_vec": pg_vec, "limit": limit},
+                )
+                rows = result.fetchall()
+                if rows:
+                    return [row[0] for row in rows]
         except Exception as exc:
             logger.warning("Vector search failed, falling back to FIFO: %s", exc)
 
     # Fallback: return most recent chunks
-    result = await db.execute(
-        text(
-            "SELECT content FROM knowledge_chunks "
-            "WHERE site_id = :site_id "
-            "ORDER BY created_at DESC "
-            "LIMIT :limit"
-        ),
-        {"site_id": site_id, "limit": limit},
-    )
-    return [row[0] for row in result.fetchall()]
+    try:
+        result = await db.execute(
+            text(
+                "SELECT content FROM knowledge_chunks "
+                "WHERE site_id = :site_id "
+                "ORDER BY created_at DESC "
+                "LIMIT :limit"
+            ),
+            {"site_id": site_id, "limit": limit},
+        )
+        return [row[0] for row in result.fetchall()]
+    except Exception as exc:
+        logger.warning("Knowledge retrieval failed; continuing without context: %s", exc)
+        return []
