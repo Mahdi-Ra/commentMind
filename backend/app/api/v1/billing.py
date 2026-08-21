@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_current_user, get_customer_user
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.billing import CheckoutCreate, CheckoutOut, PaymentOut, PaymentSubmit, TrialCreate, TrialOut
@@ -28,7 +28,7 @@ def _instructions(payment) -> list[str]:
 async def create_checkout(
     payload: CheckoutCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     payment = await create_payment_intent(db, current_user, payload)
     return CheckoutOut(payment=PaymentOut.model_validate(payment), instructions=_instructions(payment))
@@ -37,7 +37,7 @@ async def create_checkout(
 @router.get("/payments", response_model=list[PaymentOut])
 async def list_payments(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     return await get_user_payments(db, current_user.id)
 
@@ -46,7 +46,7 @@ async def list_payments(
 async def start_free_trial(
     payload: TrialCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     user = await start_trial(db, current_user, payload)
     return TrialOut(
@@ -61,7 +61,7 @@ async def submit_payment(
     payment_id: str,
     payload: PaymentSubmit,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     return await submit_payment_tx(db, current_user, payment_id, payload)
 

@@ -10,7 +10,7 @@ from app.schemas.widget import TestConnectionIn, WidgetPingOut
 from app.services.site_service import (
     create_site, get_user_sites, get_site, update_site, regenerate_api_key
 )
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_customer_user
 
 router = APIRouter(prefix="/sites", tags=["Sites"])
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/sites", tags=["Sites"])
 async def create(
     payload: SiteCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await enforce_site_limit(db, current_user.id, current_user.plan)
     site, api_key = await create_site(db, current_user.id, payload)
@@ -29,7 +29,7 @@ async def create(
 @router.get("", response_model=list[SiteOut])
 async def list_sites(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     return await get_user_sites(db, current_user.id)
 
@@ -38,7 +38,7 @@ async def list_sites(
 async def get_one(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     return await get_site(db, site_id, current_user.id)
 
@@ -48,7 +48,7 @@ async def update(
     site_id: str,
     payload: SiteUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     site = await get_site(db, site_id, current_user.id)
     return await update_site(db, site, payload)
@@ -58,7 +58,7 @@ async def update(
 async def regen_key(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     site = await get_site(db, site_id, current_user.id)
     new_key = await regenerate_api_key(db, site)
@@ -69,7 +69,7 @@ async def regen_key(
 async def embed_snippet(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     site = await get_site(db, site_id, current_user.id)
     base = settings.PUBLIC_BASE_URL.rstrip("/")
@@ -98,7 +98,7 @@ async def test_connection(
     site_id: str,
     payload: TestConnectionIn,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     site = await get_site(db, site_id, current_user.id)
     if hash_api_key(payload.api_key) != site.api_key_hash:

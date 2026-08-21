@@ -17,6 +17,7 @@ class AdminUserOut(BaseModel):
     full_name: str | None
     plan: str
     is_active: bool
+    is_admin: bool
     sites_count: int
     comments_count: int
     created_at: datetime

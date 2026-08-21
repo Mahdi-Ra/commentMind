@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_platform_admin
+from app.api.v1.deps import get_platform_admin, is_platform_admin
 from app.core.database import get_db
 from app.models.comment import Comment
 from app.models.payment import PaymentIntent
@@ -80,6 +80,7 @@ async def list_users(
             full_name=user.full_name,
             plan=user.plan,
             is_active=user.is_active,
+            is_admin=is_platform_admin(user),
             sites_count=sites_count,
             comments_count=comments_count,
             created_at=user.created_at,
@@ -100,6 +101,12 @@ async def update_user(
     if not user:
         from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if is_platform_admin(user):
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform admin accounts cannot be modified here",
+        )
     if payload.plan is not None:
         user.plan = payload.plan
     if payload.is_active is not None:
@@ -118,7 +125,7 @@ async def update_user(
     ) or 0
     return AdminUserOut(
         id=user.id, email=user.email, full_name=user.full_name, plan=user.plan,
-        is_active=user.is_active, sites_count=sites_count, comments_count=comments_count,
+        is_active=user.is_active, is_admin=is_platform_admin(user), sites_count=sites_count, comments_count=comments_count,
         created_at=user.created_at,
     )
 

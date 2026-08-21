@@ -47,6 +47,17 @@ async def get_platform_admin(
     return current_user
 
 
+async def get_customer_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if is_platform_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform admins can only use the admin console",
+        )
+    return current_user
+
+
 async def get_site_from_api_key(
     credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
     db: AsyncSession = Depends(get_db),

@@ -28,11 +28,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Show onboarding once per browser after first login
   useEffect(() => {
-    if (user && !localStorage.getItem(ONBOARDING_KEY)) {
+    if (user && !user.is_admin && !localStorage.getItem(ONBOARDING_KEY)) {
       setShowOnboarding(true)
       localStorage.setItem(ONBOARDING_KEY, '1')
     }
   }, [user])
+
+  useEffect(() => {
+    if (user?.is_admin && !pathname.startsWith('/dashboard/admin')) {
+      router.replace('/dashboard/admin')
+    }
+  }, [pathname, router, user?.is_admin])
 
   if (!token) {
     return (
@@ -42,7 +48,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  const isFree = !user?.plan || user.plan === 'free'
+  const isAdmin = Boolean(user?.is_admin)
+  const isFree = !isAdmin && (!user?.plan || user.plan === 'free')
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -53,25 +60,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1 p-4">
-          <NavItem
-            href="/dashboard"
-            active={pathname === '/dashboard'}
-            icon={<LayoutDashboard className="h-4 w-4" />}
-            label="Overview"
-          />
-          <NavItem
-            href="/dashboard/account"
-            active={pathname === '/dashboard/account'}
-            icon={<UserCircle className="h-4 w-4" />}
-            label="Account"
-          />
-          {user?.is_admin && (
+          {isAdmin ? (
             <NavItem
               href="/dashboard/admin"
-              active={pathname === '/dashboard/admin'}
+              active={pathname.startsWith('/dashboard/admin')}
               icon={<ShieldCheck className="h-4 w-4" />}
               label="Platform admin"
             />
+          ) : (
+            <>
+              <NavItem
+                href="/dashboard"
+                active={pathname === '/dashboard'}
+                icon={<LayoutDashboard className="h-4 w-4" />}
+                label="Overview"
+              />
+              <NavItem
+                href="/dashboard/account"
+                active={pathname === '/dashboard/account'}
+                icon={<UserCircle className="h-4 w-4" />}
+                label="Account"
+              />
+            </>
           )}
         </nav>
 
@@ -93,10 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
 
           {/* User info */}
-          <Link
-            href="/dashboard/account"
-            className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 transition hover:bg-slate-100"
-          >
+          <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700">
               {(user?.full_name || user?.email || '?').charAt(0).toUpperCase()}
             </div>
@@ -106,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </p>
               <p className="truncate text-xs text-slate-500">{user?.email}</p>
             </div>
-          </Link>
+          </div>
 
           <Button
             variant="ghost"
@@ -126,18 +133,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
           <MobileUserMenu
             email={user?.email}
+            isAdmin={isAdmin}
             onLogout={() => { logout(); router.push('/auth') }}
           />
         </header>
         <main className="flex-1 animate-fade-in">{children}</main>
       </div>
 
-      <OnboardingModal
-        open={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onAddSite={() => {}}
-        hasSite={false}
-      />
+      {!isAdmin && <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} onAddSite={() => {}} hasSite={false} />}
     </div>
   )
 }
@@ -169,7 +172,7 @@ function NavItem({
   )
 }
 
-function MobileUserMenu({ email, onLogout }: { email?: string; onLogout: () => void }) {
+function MobileUserMenu({ email, isAdmin, onLogout }: { email?: string; isAdmin: boolean; onLogout: () => void }) {
   return (
     <details className="relative">
       <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
@@ -178,11 +181,11 @@ function MobileUserMenu({ email, onLogout }: { email?: string; onLogout: () => v
       </summary>
       <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
         <Link
-          href="/dashboard/account"
+          href={isAdmin ? '/dashboard/admin' : '/dashboard/account'}
           className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
         >
-          <UserCircle className="h-4 w-4" />
-          Account
+          {isAdmin ? <ShieldCheck className="h-4 w-4" /> : <UserCircle className="h-4 w-4" />}
+          {isAdmin ? 'Platform admin' : 'Account'}
         </Link>
         <button
           type="button"
