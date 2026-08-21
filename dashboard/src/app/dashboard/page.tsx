@@ -13,6 +13,7 @@ import {
   MessageCircle,
   ShieldAlert,
   TrendingUp,
+  Download,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
@@ -151,25 +152,40 @@ export default function DashboardPage() {
           />
         )}
 
-        {loading ? (
-          <Spinner label="Loading your sites…" />
-        ) : sites.length === 0 ? (
-          <EmptyState
-            icon={Globe}
-            title="No sites yet"
-            description="Connect your first website to start moderating comments with AI."
-            action={{ label: 'Add your first site', onClick: () => setShowAddSite(true) }}
-          />
-        ) : (
-          <>
-            {insights && <InsightPanel insights={insights} />}
+        <section>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Your sites</h2>
+              <p className="mt-1 text-sm text-slate-500">Open comments or update settings for a connected site.</p>
+            </div>
+            <a
+              href="/downloads/commentmind-ai-wordpress-plugin.zip"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <Download className="h-4 w-4" />
+              Download WordPress plugin
+            </a>
+          </div>
+
+          {loading ? (
+            <Spinner label="Loading your sites…" />
+          ) : sites.length === 0 ? (
+            <EmptyState
+              icon={Globe}
+              title="No sites yet"
+              description="Connect your first website to start moderating comments with AI."
+              action={{ label: 'Add your first site', onClick: () => setShowAddSite(true) }}
+            />
+          ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {sites.map((site) => (
                 <SiteCard key={site.id} site={site} stats={statsMap[site.id]} />
               ))}
             </div>
-          </>
-        )}
+          )}
+        </section>
+
+        {!loading && insights && <InsightPanel insights={insights} />}
       </div>
 
       <Modal
