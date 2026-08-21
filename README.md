@@ -42,6 +42,7 @@ PUBLIC_BASE_URL=http://localhost:8000
 USDT_TRC20_ADDRESS=
 TRX_ADDRESS=
 PAYMENT_ADMIN_EMAILS=
+ADMIN_EMAILS=owner@example.com
 ```
 
 Edit `dashboard/.env.local`:

@@ -21,7 +21,7 @@ from app.schemas.auth import (
     UserProfileUpdate,
     UserPasswordChange,
 )
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_current_user, is_platform_admin
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -40,6 +40,7 @@ def _user_out(user: User) -> UserOut:
         full_name=user.full_name,
         plan=user.plan,
         is_active=user.is_active,
+        is_admin=is_platform_admin(user),
         plan_display_name=info["display_name"],
         plan_max_sites=info["max_sites"],
         plan_max_comments_month=info["max_comments_month"],

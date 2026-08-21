@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap } from 'lucide-react'
+import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap, ShieldCheck } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { Logo } from '@/components/brand/logo'
 import { OnboardingModal } from '@/components/dashboard/onboarding-modal'
@@ -65,6 +65,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             icon={<UserCircle className="h-4 w-4" />}
             label="Account"
           />
+          {user?.is_admin && (
+            <NavItem
+              href="/dashboard/admin"
+              active={pathname === '/dashboard/admin'}
+              icon={<ShieldCheck className="h-4 w-4" />}
+              label="Platform admin"
+            />
+          )}
         </nav>
 
         <div className="border-t border-slate-100 p-4 space-y-3">

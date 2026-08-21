@@ -107,6 +107,17 @@ export const billingApi = {
     api.post('/billing/trial', { plan }),
 }
 
+// ─── Platform admin ─────────────────────────────────────────────────────────
+export const adminApi = {
+  overview: () => api.get('/admin/overview'),
+  users: (search?: string) => api.get('/admin/users', { params: { search } }),
+  updateUser: (userId: string, data: { plan?: string; is_active?: boolean }) =>
+    api.patch(`/admin/users/${userId}`, data),
+  sites: () => api.get('/admin/sites'),
+  payments: () => api.get('/admin/payments'),
+  confirmPayment: (paymentId: string) => api.post(`/admin/payments/${paymentId}/confirm`),
+}
+
 // ─── Knowledge Base ──────────────────────────────────────────────────────────
 export const knowledgeApi = {
   list: (siteId: string) =>

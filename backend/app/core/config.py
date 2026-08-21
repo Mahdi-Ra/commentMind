@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     USDT_TRC20_ADDRESS: str = ""
     TRX_ADDRESS: str = ""
     PAYMENT_ADMIN_EMAILS: str = ""
+    ADMIN_EMAILS: str = ""
 
     # Optional SMTP for password reset emails
     SMTP_HOST: str = ""

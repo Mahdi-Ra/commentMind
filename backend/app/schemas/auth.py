@@ -47,6 +47,7 @@ class UserOut(BaseModel):
     full_name: Optional[str]
     plan: str
     is_active: bool
+    is_admin: bool = False
     # Plan limits — populated by the endpoint, not from the ORM row
     plan_display_name: Optional[str] = None
     plan_max_sites: Optional[int] = None

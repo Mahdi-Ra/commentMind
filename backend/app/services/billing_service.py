@@ -7,6 +7,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.admin import is_platform_admin_email
 from app.core.plans import get_limits
 from app.models.payment import PaymentIntent
 from app.models.user import User
@@ -142,12 +143,7 @@ async def get_user_payments(db: AsyncSession, user_id: str) -> list[PaymentInten
 
 
 def is_payment_admin(user: User) -> bool:
-    emails = {
-        email.strip().lower()
-        for email in settings.PAYMENT_ADMIN_EMAILS.split(",")
-        if email.strip()
-    }
-    return bool(user.email and user.email.lower() in emails)
+    return is_platform_admin_email(user.email)
 
 
 async def confirm_payment(

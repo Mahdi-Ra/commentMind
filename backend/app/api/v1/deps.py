@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.admin import is_platform_admin_email
 from app.models.user import User
 from app.models.site import Site
 from app.services.site_service import get_site_by_api_key
@@ -10,6 +11,10 @@ from sqlalchemy import select
 from datetime import datetime, timezone
 
 bearer_scheme = HTTPBearer()
+
+
+def is_platform_admin(user: User) -> bool:
+    return is_platform_admin_email(user.email)
 
 
 async def get_current_user(
@@ -32,6 +37,14 @@ async def get_current_user(
         user.trial_plan = None
         user.trial_ends_at = None
     return user
+
+
+async def get_platform_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not is_platform_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
+    return current_user
 
 
 async def get_site_from_api_key(
