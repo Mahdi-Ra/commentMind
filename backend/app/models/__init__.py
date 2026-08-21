@@ -4,6 +4,7 @@ from app.models.comment import Comment
 from app.models.knowledge import KnowledgeChunk
 from app.models.payment import PaymentIntent
 from app.models.audit import AuditLog
+from app.models.search_console import SearchConsoleConnection, SearchConsoleQueryCache
 from app.models.professional import (
     AiRun,
     CommentFeedback,
@@ -19,6 +20,8 @@ __all__ = [
     "KnowledgeChunk",
     "PaymentIntent",
     "AuditLog",
+    "SearchConsoleConnection",
+    "SearchConsoleQueryCache",
     "Organization",
     "OrganizationMember",
     "WebhookEndpoint",

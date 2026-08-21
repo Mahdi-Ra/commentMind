@@ -131,6 +131,8 @@ def _build_system_prompt(
 - If it is praise, thank the customer.
 - If it is spam, set reply to null.
 - Keep replies short, useful, and on-brand.
+- If page context includes Search Console queries, use them only when they naturally clarify
+  the answer. Never force keywords, repeat phrases, or write for search engines over people.
 """
 
     if knowledge_context:

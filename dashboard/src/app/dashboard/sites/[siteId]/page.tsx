@@ -16,6 +16,7 @@ import {
   Plus,
   Upload,
   Trash2,
+  BarChart3,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Label, Input, Select, Textarea } from '@/components/ui/input'
 import { TONE_OPTIONS, LANGUAGE_OPTIONS } from '@/lib/constants'
 import { IntegrationTab } from '@/components/sites/integration-tab'
+import { SearchConsoleTab } from '@/components/sites/search-console-tab'
 
 interface Site {
   id: string
@@ -48,7 +50,7 @@ interface KnowledgeChunk {
   chunk_index: number
 }
 
-type TabId = 'settings' | 'knowledge' | 'apikey' | 'integration'
+type TabId = 'settings' | 'knowledge' | 'search-console' | 'apikey' | 'integration'
 
 export default function SiteSettingsPage() {
   const { siteId } = useParams()
@@ -201,6 +203,7 @@ export default function SiteSettingsPage() {
           tabs={[
             { id: 'settings', label: 'Settings', icon: <Settings2 className="h-4 w-4" /> },
             { id: 'knowledge', label: 'Knowledge', icon: <BookOpen className="h-4 w-4" /> },
+            { id: 'search-console', label: 'SEO', icon: <BarChart3 className="h-4 w-4" /> },
             { id: 'apikey', label: 'API Key', icon: <Key className="h-4 w-4" /> },
             { id: 'integration', label: 'Integration', icon: <Plug className="h-4 w-4" /> },
           ]}
@@ -441,6 +444,7 @@ export default function SiteSettingsPage() {
           )}
 
           {tab === 'integration' && <IntegrationTab siteId={id} />}
+          {tab === 'search-console' && <SearchConsoleTab siteId={id} />}
         </div>
       </div>
     </>

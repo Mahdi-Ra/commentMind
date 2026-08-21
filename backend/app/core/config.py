@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     PAYMENT_ADMIN_EMAILS: str = ""
     ADMIN_EMAILS: str = ""
 
+    # Google Search Console (optional, read-only OAuth connection)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_OAUTH_REDIRECT_URI: str = ""
+
     # Optional SMTP for password reset emails
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

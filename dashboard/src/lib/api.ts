@@ -138,3 +138,12 @@ export const knowledgeApi = {
   clear: (siteId: string) =>
     api.delete(`/sites/${siteId}/knowledge`),
 }
+
+// ─── Google Search Console ──────────────────────────────────────────────────
+export const searchConsoleApi = {
+  status: (siteId: string) => api.get(`/sites/${siteId}/search-console`),
+  authorize: (siteId: string) => api.get(`/sites/${siteId}/search-console/authorize`),
+  selectProperty: (siteId: string, property_url: string) =>
+    api.post(`/sites/${siteId}/search-console/property`, { property_url }),
+  disconnect: (siteId: string) => api.delete(`/sites/${siteId}/search-console`),
+}

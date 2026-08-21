@@ -56,6 +56,7 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
     from app.services.ai_service import analyze_comment
     from app.services.comment_service import determine_comment_status
     from app.services.embedding_service import get_relevant_chunks
+    from app.services.search_console_service import get_page_query_context
 
     async with AsyncSessionLocal() as db:
         try:
@@ -78,6 +79,7 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
                 db, site_id, comment.content, limit=8
             )
             knowledge_context = "\n---\n".join(knowledge_chunks)
+            search_context = await get_page_query_context(db, site_id, comment.post_url)
 
             # Run AI analysis
             analysis = await analyze_comment(
@@ -86,6 +88,7 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
                 tone=site.tone,
                 language=site.language,
                 knowledge_context=knowledge_context,
+                page_context=search_context,
                 custom_instructions=site.custom_instructions or "",
             )
 

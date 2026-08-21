@@ -9,6 +9,7 @@ from app.models.site import Site
 from app.schemas.comment import CommentSubmit, CommentResult, CommentStats
 from app.services.ai_service import analyze_comment
 from app.services.embedding_service import get_relevant_chunks
+from app.services.search_console_service import get_page_query_context
 
 
 def determine_comment_status(site: Site, analysis: dict) -> tuple[str, float]:
@@ -52,9 +53,10 @@ async def process_comment(
         db, site.id, payload.content, limit=8
     )
     knowledge_context = "\n---\n".join(knowledge_chunks)
+    search_context = await get_page_query_context(db, site.id, payload.post_url)
 
     # 2. AI analysis
-    page_context = _build_page_context(payload)
+    page_context = _build_page_context(payload, search_context)
     analysis = await analyze_comment(
         content=payload.content,
         site_name=site.name,
@@ -124,7 +126,7 @@ async def process_comment(
     )
 
 
-def _build_page_context(payload: CommentSubmit) -> str:
+def _build_page_context(payload: CommentSubmit, search_context: str = "") -> str:
     parts = []
     if payload.post_title:
         parts.append(f"Page/product title: {payload.post_title}")
@@ -138,6 +140,8 @@ def _build_page_context(payload: CommentSubmit) -> str:
         parts.append(f"Stock status: {payload.product_stock_status}")
     if payload.product_context:
         parts.append(payload.product_context)
+    if search_context:
+        parts.append(search_context)
     return "\n".join(parts)
 
 

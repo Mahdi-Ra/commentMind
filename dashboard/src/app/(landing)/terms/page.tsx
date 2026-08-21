@@ -1,0 +1,8 @@
+import { LandingNav } from '@/components/landing/nav'
+import { LandingFooter } from '@/components/landing/footer'
+
+export const metadata = { title: 'Terms of Service | CommentMind AI' }
+
+export default function TermsPage() {
+  return <><LandingNav /><main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6"><h1 className="text-3xl font-bold text-slate-900">Terms of Service</h1><p className="mt-3 text-sm text-slate-500">Last updated: August 21, 2026</p><div className="mt-10 space-y-8 text-sm leading-7 text-slate-600"><section><h2 className="text-lg font-semibold text-slate-900">Service</h2><p className="mt-2">CommentMind provides tools that help website owners moderate comments, identify spam, and prepare or publish replies. You remain responsible for your site content, moderation settings, and compliance obligations.</p></section><section><h2 className="text-lg font-semibold text-slate-900">Accounts and API keys</h2><p className="mt-2">Keep account credentials and API keys confidential. You are responsible for activity performed through your account and connected sites.</p></section><section><h2 className="text-lg font-semibold text-slate-900">AI-generated content</h2><p className="mt-2">AI output can be imperfect. Review and configure automation settings appropriately for your audience and legal requirements. Do not use the service to publish unlawful, deceptive, or harmful content.</p></section><section><h2 className="text-lg font-semibold text-slate-900">Contact</h2><p className="mt-2">Questions about these terms can be sent to hello@commentmind.website.</p></section></div></main><LandingFooter /></>
+}

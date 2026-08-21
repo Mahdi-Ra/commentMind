@@ -18,7 +18,8 @@ const LINKS = {
     { label: 'About', href: '#' },
     { label: 'Blog', href: '#' },
     { label: 'Contact', href: 'mailto:hello@commentmind.ai' },
-    { label: 'Privacy policy', href: '#' },
+    { label: 'Privacy policy', href: '/privacy' },
+    { label: 'Terms of service', href: '/terms' },
   ],
 }
 

@@ -2,16 +2,20 @@
 /**
  * Plugin Name: CommentMind AI
  * Plugin URI:  https://commentmind.website
- * Description: AI-powered comment moderation, replies, approval, and spam filtering.
- * Version:     1.0.1
+ * Description: Moderate WordPress comments, filter spam, and publish AI-assisted replies through CommentMind.
+ * Version:     1.1.0
  * Author:      CommentMind
+ * Author URI:  https://commentmind.website
+ * Requires at least: 6.0
+ * Requires PHP: 8.0
  * License:     GPL v2
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: commentmind-ai
  */
 
 defined('ABSPATH') || exit;
 
-define('CM_VERSION',    '1.0.1');
+define('CM_VERSION',    '1.1.0');
 define('CM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -27,6 +31,7 @@ add_action('plugins_loaded', ['CommentMind_AI', 'init']);
 class CommentMind_AI {
 
     public static function init(): void {
+        load_plugin_textdomain('commentmind-ai', false, dirname(plugin_basename(__FILE__)) . '/languages');
         $settings = CM_Settings::instance();
 
         // The admin settings page must always be available so new installs can be configured.
