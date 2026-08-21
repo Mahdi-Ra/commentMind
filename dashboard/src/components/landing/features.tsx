@@ -12,7 +12,7 @@ const FEATURES = [
     icon: Bot,
     title: 'AI-generated replies',
     description:
-      'GPT-4o reads each comment and writes a contextual reply in your brand voice — using your knowledge base as the source of truth.',
+      'CommentMind reads each comment and writes a contextual reply in your brand voice — using your knowledge base as the source of truth.',
     color: 'bg-violet-50 text-violet-600',
   },
   {

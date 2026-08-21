@@ -25,7 +25,7 @@ const TESTIMONIALS = [
     avatar: 'PN',
     color: 'bg-amber-100 text-amber-700',
     quote:
-      "Spam used to be a constant headache. Now it's just gone. The 98% accuracy claim is real — we've been running it for 3 months with almost no false positives.",
+      "Spam used to be a constant headache. Now it barely reaches our moderation queue, and the team can focus on real customer conversations.",
     stars: 5,
   },
   {

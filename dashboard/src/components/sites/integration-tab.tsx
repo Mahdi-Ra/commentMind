@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Code2, Copy, Plug, CheckCircle2 } from 'lucide-react'
+import { Code2, Copy, Plug, CheckCircle2, Download } from 'lucide-react'
 import { sitesApi } from '@/lib/api'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -84,6 +84,29 @@ export function IntegrationTab({ siteId }: { siteId: string }) {
 
   return (
     <div className="space-y-5">
+      <Card>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+              <Download className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">WordPress plugin</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Download the plugin, activate it in WordPress, then paste this site&apos;s API key.
+              </p>
+            </div>
+          </div>
+          <a
+            href="/downloads/commentmind-ai-wordpress-plugin.zip"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            <Download className="h-4 w-4" />
+            Download plugin
+          </a>
+        </div>
+      </Card>
+
       <Card>
         <div className="mb-4 flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-700">

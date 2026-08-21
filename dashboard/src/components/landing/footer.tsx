@@ -38,7 +38,7 @@ export function LandingFooter() {
               </span>
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-slate-500">
-              AI-powered comment moderation for websites of all sizes. Powered by GPT-4o.
+              AI-powered comment moderation for websites of all sizes, built for faster customer conversations.
             </p>
             <p className="mt-4 text-xs text-slate-400">
               © {new Date().getFullYear()} CommentMind AI. All rights reserved.

@@ -257,21 +257,7 @@ function SiteCard({ site, stats }: { site: Site; stats?: Stats }) {
         </Badge>
       </div>
 
-      {stats && (
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <StatMini icon={MessageCircle} label="Total" value={stats.total} />
-          <StatMini icon={TrendingUp} label="Today" value={stats.today} accent />
-          <StatMini icon={ShieldAlert} label="Spam" value={stats.spam} warn={stats.spam > 0} />
-        </div>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-1.5">
-        {site.auto_reply && <Badge variant="info">Auto-reply</Badge>}
-        {site.auto_approve && <Badge variant="success">Auto-approve</Badge>}
-        {site.auto_spam && <Badge variant="warning">Spam filter</Badge>}
-      </div>
-
-      <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+      <div className="mt-4 flex gap-2">
         <Link href={`/dashboard/sites/${site.id}/comments`} className="flex-1">
           <Button variant="secondary" size="sm" className="w-full">
             <MessageSquare className="h-4 w-4" />
@@ -284,6 +270,20 @@ function SiteCard({ site, stats }: { site: Site; stats?: Stats }) {
             Settings
           </Button>
         </Link>
+      </div>
+
+      {stats && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <StatMini icon={MessageCircle} label="Total" value={stats.total} />
+          <StatMini icon={TrendingUp} label="Today" value={stats.today} accent />
+          <StatMini icon={ShieldAlert} label="Spam" value={stats.spam} warn={stats.spam > 0} />
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {site.auto_reply && <Badge variant="info">Auto-reply</Badge>}
+        {site.auto_approve && <Badge variant="success">Auto-approve</Badge>}
+        {site.auto_spam && <Badge variant="warning">Spam filter</Badge>}
       </div>
     </Card>
   )

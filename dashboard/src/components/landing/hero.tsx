@@ -10,23 +10,16 @@ export function HeroSection() {
       <div className="absolute top-20 right-0 h-[400px] w-[400px] rounded-full bg-indigo-100/40 blur-3xl pointer-events-none" />
 
       <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        {/* Eyebrow badge */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm font-medium text-violet-700 animate-fade-in">
-          <span className="flex h-2 w-2 rounded-full bg-violet-500" />
-          Powered by GPT-4o
-        </div>
-
         {/* Headline */}
         <h1 className="animate-slide-up text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-          Your website comments,{' '}
-          <span className="gradient-text">moderated by AI</span>
+          Turn Website Comments Into{' '}
+          <span className="gradient-text">Automated Conversations</span>
         </h1>
 
         {/* Sub-headline */}
         <p className="animate-slide-up-delay-1 mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500">
-          CommentMind automatically replies to questions, filters spam, and approves
-          legitimate comments — trained on your own knowledge base. Works with WordPress,
-          any JS site, and more.
+          CommentMind uses AI to moderate comments, answer customer questions, and reply in
+          your brand voice — using your own knowledge base.
         </p>
 
         {/* CTA buttons */}
@@ -54,8 +47,8 @@ export function HeroSection() {
         {/* Hero stats */}
         <div className="animate-slide-up-delay-3 mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-4">
           {[
-            { icon: Bot, value: '< 1s', label: 'Avg. reply time' },
-            { icon: ShieldCheck, value: '98%', label: 'Spam accuracy' },
+            { icon: Bot, value: '0.8s', label: 'Average AI response' },
+            { icon: ShieldCheck, value: '24/7', label: 'Comment coverage' },
             { icon: Zap, value: '5 min', label: 'Setup time' },
           ].map(({ icon: Icon, value, label }) => (
             <div
