@@ -3,16 +3,16 @@ import { Brain } from 'lucide-react'
 
 const LINKS = {
   Product: [
-    { label: 'Features', href: '#features' },
-    { label: 'How it works', href: '#how-it-works' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'Features', href: '/#features' },
+    { label: 'How it works', href: '/#how-it-works' },
+    { label: 'Pricing', href: '/#pricing' },
+    { label: 'FAQ', href: '/#faq' },
   ],
   Developers: [
     { label: 'API docs', href: '/docs' },
     { label: 'WordPress plugin', href: '/downloads/commentmind-ai-wordpress-plugin.zip' },
-    { label: 'JS widget', href: '#' },
-    { label: 'Status', href: '#' },
+    { label: 'JS widget', href: '/js-widget' },
+    { label: 'Status', href: '/status' },
   ],
   Integrations: [
     { label: 'WordPress', href: '/wordpress/' },
@@ -21,9 +21,8 @@ const LINKS = {
     { label: 'Webflow', href: '/webflow/' },
   ],
   Company: [
-    { label: 'About', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Contact', href: 'mailto:hello@commentmind.ai' },
+    { label: 'About', href: '/about' },
+    { label: 'Contact', href: 'mailto:hello@commentmind.website' },
     { label: 'Privacy policy', href: '/privacy' },
     { label: 'Terms of service', href: '/terms' },
   ],
@@ -32,10 +31,10 @@ const LINKS = {
 export function LandingFooter() {
   return (
     <footer className="border-t border-slate-100 bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))] lg:gap-8">
           {/* Brand */}
-          <div>
+          <div className="max-w-sm">
             <Link href="/" className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-800 text-white">
                 <Brain className="h-4 w-4" strokeWidth={2} />

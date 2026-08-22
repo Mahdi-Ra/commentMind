@@ -6,10 +6,10 @@ import { Brain, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'Features', href: '/#features' },
+  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Pricing', href: '/#pricing' },
+  { label: 'FAQ', href: '/#faq' },
 ]
 
 export function LandingNav() {
