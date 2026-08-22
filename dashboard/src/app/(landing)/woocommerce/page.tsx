@@ -1,0 +1,12 @@
+import type { Metadata } from 'next'
+import { PlatformLanding, faqSchema } from '@/components/landing/platform-landing'
+
+const faqs = [
+  { question: 'Does this work if I already use WordPress comments for my blog too?', answer: 'Yes. One installation covers both shop and blog comments.' },
+  { question: 'Can it handle order-specific questions?', answer: 'No. CommentMind handles public comment and Q&A content, not order support or private customer data.' },
+  { question: 'Is product data kept up to date automatically?', answer: 'CommentMind uses the available WooCommerce product context at the time a comment is processed.' },
+]
+
+export const metadata: Metadata = { title: { absolute: 'AI Comment Moderation for WooCommerce | CommentMind' }, description: 'Auto-reply to product comments and questions on your WooCommerce store. CommentMind uses your product data to answer customers and block spam automatically.' }
+
+export default function WooCommerceLanding() { return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faqs)) }} /><PlatformLanding eyebrow="WooCommerce integration" title="AI Comment Moderation & Auto-Reply for WooCommerce" description="WooCommerce product pages generate constant comment traffic — questions, spam, and the occasional real complaint all mixed together. CommentMind sorts it automatically, replying to genuine customer questions using your product catalog and blocking spam before it touches your store's credibility." features={[{ title: 'Understands your product catalog', description: 'Uses available pricing, stock status, SKU, and product context so replies are accurate rather than generic.' }, { title: 'One tool for blog and shop comments', description: 'Moderate product and content comments from a single dashboard.' }, { title: 'Protects store reputation', description: 'Spam and scam comments are removed before potential buyers see them.' }, { title: 'Built for WordPress, tuned for e-commerce', description: 'The lightweight WordPress plugin adds e-commerce-aware reply context for WooCommerce stores.' }]} steps={['Install the CommentMind plugin and connect your WooCommerce site.', 'Let CommentMind use the available product data and your knowledge base.', 'Comments on products and posts are moderated and answered automatically.']} faqs={faqs} cta={{ label: 'Get CommentMind for WooCommerce', href: '/downloads/commentmind-ai-wordpress-plugin.zip' }} /></> }

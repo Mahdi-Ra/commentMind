@@ -10,8 +10,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'CommentMind AI — Dashboard',
+  title: { default: 'CommentMind | AI Comment Moderation', template: '%s | CommentMind' },
   description: 'AI-powered comment moderation and replies for your website',
+  icons: { icon: '/icon.svg' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

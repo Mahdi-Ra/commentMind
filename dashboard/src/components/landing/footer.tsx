@@ -14,6 +14,12 @@ const LINKS = {
     { label: 'JS widget', href: '#' },
     { label: 'Status', href: '#' },
   ],
+  Integrations: [
+    { label: 'WordPress', href: '/wordpress/' },
+    { label: 'WooCommerce', href: '/woocommerce/' },
+    { label: 'Shopify', href: '/shopify/' },
+    { label: 'Webflow', href: '/webflow/' },
+  ],
   Company: [
     { label: 'About', href: '#' },
     { label: 'Blog', href: '#' },
@@ -27,7 +33,7 @@ export function LandingFooter() {
   return (
     <footer className="border-t border-slate-100 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div>
             <Link href="/" className="flex items-center gap-2.5">
