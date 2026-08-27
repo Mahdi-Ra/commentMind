@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: CommentMind AI
- * Plugin URI:  https://commentmind.website
+ * Plugin URI:  https://commentmind.website/wordpress/
  * Description: Moderate WordPress comments, filter spam, and publish AI-assisted replies through CommentMind.
  * Version:     1.1.0
  * Author:      CommentMind
- * Author URI:  https://commentmind.website
+ * Author URI:  https://commentmind.website/about/
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * License:     GPL v2
