@@ -3,7 +3,7 @@
  * Plugin Name: CommentMind AI
  * Plugin URI:  https://commentmind.website/wordpress/
  * Description: Moderate WordPress comments, filter spam, and publish AI-assisted replies through CommentMind.
- * Version:     1.1.0
+ * Version:     1.1.1
  * Author:      CommentMind
  * Author URI:  https://commentmind.website/about/
  * Requires at least: 6.0
@@ -15,7 +15,7 @@
 
 defined('ABSPATH') || exit;
 
-define('CM_VERSION',    '1.1.0');
+define('CM_VERSION',    '1.1.1');
 define('CM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CM_PLUGIN_URL', plugin_dir_url(__FILE__));
 

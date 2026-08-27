@@ -67,7 +67,7 @@ class CM_Admin {
                             <th>API Key</th>
                             <td>
                                 <input type="password" name="commentmind_settings[api_key]"
-                                       value="<?= esc_attr($settings->get('api_key')); ?>"
+                                       value="<?php echo esc_attr($settings->get('api_key')); ?>"
                                        class="regular-text" placeholder="cm_..." />
                                 <p class="description">Get your site API key from the CommentMind dashboard.</p>
                             </td>
@@ -76,7 +76,7 @@ class CM_Admin {
                             <th>API URL</th>
                             <td>
                                 <input type="url" name="commentmind_settings[api_url]"
-                                       value="<?= esc_attr($settings->get('api_url')); ?>"
+                                       value="<?php echo esc_attr($settings->get('api_url')); ?>"
                                        class="regular-text" />
                             </td>
                         </tr>
@@ -134,9 +134,9 @@ class CM_Admin {
                                 <select name="commentmind_settings[reply_as_user]">
                                     <option value="0">Support (default)</option>
                                     <?php foreach ($users as $user) : ?>
-                                        <option value="<?= esc_attr($user->ID); ?>"
-                                            <?= selected($settings->get('reply_as_user'), $user->ID, false); ?>>
-                                            <?= esc_html($user->display_name); ?>
+                                        <option value="<?php echo esc_attr($user->ID); ?>"
+                                            <?php echo selected($settings->get('reply_as_user'), $user->ID, false); ?>>
+                                            <?php echo esc_html($user->display_name); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -153,7 +153,7 @@ class CM_Admin {
                             <td>
                                 <label>
                                     <input type="checkbox" name="commentmind_settings[auto_reply]"
-                                           value="1" <?= checked($settings->get('auto_reply'), true, false); ?> />
+                                           value="1" <?php echo checked($settings->get('auto_reply'), true, false); ?> />
                                     Send AI replies to comments
                                 </label>
                             </td>
@@ -163,7 +163,7 @@ class CM_Admin {
                             <td>
                                 <label>
                                     <input type="checkbox" name="commentmind_settings[auto_approve]"
-                                           value="1" <?= checked($settings->get('auto_approve'), true, false); ?> />
+                                           value="1" <?php echo checked($settings->get('auto_approve'), true, false); ?> />
                                     Publish valid comments without manual approval
                                 </label>
                             </td>
@@ -173,7 +173,7 @@ class CM_Admin {
                             <td>
                                 <label>
                                     <input type="checkbox" name="commentmind_settings[auto_spam]"
-                                           value="1" <?= checked($settings->get('auto_spam'), true, false); ?> />
+                                           value="1" <?php echo checked($settings->get('auto_spam'), true, false); ?> />
                                     Automatically mark spam comments
                                 </label>
                             </td>

@@ -2,9 +2,9 @@
 Contributors: mahdirahani
 Tags: comments, comment moderation, spam filter, ai replies, customer support
 Requires at least: 6.0
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,10 @@ The plugin removes its local settings. Existing WordPress comments are not delet
 
 == Changelog ==
 
+= 1.1.1 =
+* Fixed WordPress.org compatibility checks for PHP output tags.
+* Updated the tested WordPress version metadata.
+
 = 1.1.0 =
 * Prepared the plugin package for WordPress.org distribution.
 * Added standard plugin documentation and uninstall cleanup.
@@ -71,6 +75,9 @@ The plugin removes its local settings. Existing WordPress comments are not delet
 * Fixed the admin settings menu for new installations.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Improves WordPress.org compatibility metadata and admin output compatibility.
 
 = 1.1.0 =
 Adds WordPress.org-ready documentation and standard cleanup on uninstall.
