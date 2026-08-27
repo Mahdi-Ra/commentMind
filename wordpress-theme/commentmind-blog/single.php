@@ -1,0 +1,11 @@
+<?php get_header(); ?>
+<?php while (have_posts()) : the_post(); $toc = cm_blog_get_toc(get_the_ID()); $faqs = get_post_meta(get_the_ID(), '_cm_blog_faqs', true); ?>
+<main>
+  <header class="cm-article-hero"><div class="cm-container cm-article-hero__inner"><div class="cm-article-category"><?php $categories = get_the_category(); echo $categories ? esc_html($categories[0]->name) : 'Article'; ?></div><h1><?php the_title(); ?></h1><?php if (has_excerpt()) : ?><p class="cm-article-summary"><?php echo esc_html(get_the_excerpt()); ?></p><?php endif; ?><p class="cm-article-details"><time datetime="<?php echo esc_attr(get_the_date(DATE_W3C)); ?>"><?php echo esc_html(get_the_date()); ?></time> <span aria-hidden="true"> · </span> <?php echo esc_html(cm_blog_read_time() . ' min read'); ?></p></div><?php if (has_post_thumbnail()) : ?><div class="cm-featured-image cm-container"><?php the_post_thumbnail('large'); ?></div><?php endif; ?></header>
+  <div class="cm-article-layout">
+    <article class="cm-article"><?php the_content(); ?><?php if (is_array($faqs) && $faqs) : ?><section class="cm-faq" aria-labelledby="article-faq"><h2 id="article-faq">Frequently asked questions</h2><?php foreach ($faqs as $faq) : if (!empty($faq['question']) && !empty($faq['answer'])) : ?><details><summary><?php echo esc_html($faq['question']); ?></summary><div class="cm-faq__answer"><?php echo wp_kses_post(wpautop($faq['answer'])); ?></div></details><?php endif; endforeach; ?></section><?php endif; ?></article>
+    <?php if ($toc) : ?><aside class="cm-toc" aria-label="Table of contents"><h2>On this page</h2><ol><?php foreach ($toc as $item) : ?><li class="cm-toc-h<?php echo esc_attr($item['level']); ?>"><a href="#<?php echo esc_attr($item['id']); ?>"><?php echo esc_html($item['title']); ?></a></li><?php endforeach; ?></ol></aside><?php endif; ?>
+  </div>
+  <?php $related = new WP_Query(array('post__not_in' => array(get_the_ID()), 'posts_per_page' => 3, 'category__in' => wp_get_post_categories(get_the_ID()))); if ($related->have_posts()) : ?><section class="cm-related"><div class="cm-container"><h2>Continue reading</h2><div class="cm-post-grid"><?php while ($related->have_posts()) : $related->the_post(); get_template_part('template-parts/post-card'); endwhile; ?></div></div></section><?php wp_reset_postdata(); endif; ?>
+</main>
+<?php endwhile; get_footer(); ?>

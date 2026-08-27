@@ -1,0 +1,4 @@
+<article <?php post_class('cm-post-card'); ?>>
+  <?php if (has_post_thumbnail()) : ?><a class="cm-post-card__image" href="<?php the_permalink(); ?>"><?php the_post_thumbnail('medium_large', array('loading' => 'lazy')); ?></a><?php endif; ?>
+  <div class="cm-post-card__body"><div class="cm-post-meta"><?php $categories = get_the_category(); if ($categories) : ?><a href="<?php echo esc_url(get_category_link($categories[0]->term_id)); ?>"><?php echo esc_html($categories[0]->name); ?></a><span> · </span><?php endif; ?><time datetime="<?php echo esc_attr(get_the_date(DATE_W3C)); ?>"><?php echo esc_html(get_the_date()); ?></time></div><h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2><p><?php echo esc_html(wp_trim_words(get_the_excerpt(), 22)); ?></p><a class="cm-read-link" href="<?php the_permalink(); ?>">Read article <span aria-hidden="true">→</span></a></div>
+</article>
