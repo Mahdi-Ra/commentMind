@@ -1,5 +1,5 @@
 === CommentMind AI ===
-Contributors: commentmind
+Contributors: mahdirahani
 Tags: comments, comment moderation, spam filter, ai replies, customer support
 Requires at least: 6.0
 Tested up to: 6.8
