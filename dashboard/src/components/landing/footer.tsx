@@ -7,6 +7,7 @@ const LINKS = {
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#pricing' },
     { label: 'FAQ', href: '/#faq' },
+    { label: 'AI moderation guide', href: '/guides/ai-comment-moderation/' },
   ],
   Developers: [
     { label: 'API docs', href: '/docs' },
