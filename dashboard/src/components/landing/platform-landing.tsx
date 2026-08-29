@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { ArrowRight, CheckCircle2, MessageSquareText, ShieldCheck, Sparkles } from 'lucide-react'
 import { LandingFooter } from '@/components/landing/footer'
 import { LandingNav } from '@/components/landing/nav'
@@ -14,6 +15,7 @@ export function PlatformLanding({
   steps,
   faqs,
   cta,
+  interactiveDemo,
 }: {
   eyebrow: string
   title: string
@@ -22,6 +24,7 @@ export function PlatformLanding({
   steps: string[]
   faqs: Faq[]
   cta: { label: string; href: string }
+  interactiveDemo?: ReactNode
 }) {
   return (
     <div className="min-h-screen bg-white">
@@ -51,6 +54,8 @@ export function PlatformLanding({
             </div>
           </div>
         </section>
+
+        {interactiveDemo}
 
         <section className="border-y border-slate-200 bg-slate-50 py-20 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
