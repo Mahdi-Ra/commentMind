@@ -44,7 +44,8 @@ export function PlatformLanding({
             <div className="mx-auto max-w-2xl text-center"><p className="text-sm font-semibold uppercase tracking-widest text-violet-600">Built for the workflow</p><h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Keep every conversation moving</h2></div>
             <div className="mt-14 grid gap-5 sm:grid-cols-2">
               {features.map((feature, index) => {
-                const Icon = [MessageSquareText, ShieldCheck, Sparkles, CheckCircle2][index]
+                const icons = [MessageSquareText, ShieldCheck, Sparkles, CheckCircle2]
+                const Icon = icons[index % icons.length]
                 return <article key={feature.title} className="border border-slate-200 bg-white p-6 shadow-sm"><Icon className="mb-5 h-5 w-5 text-violet-600" /><h3 className="text-lg font-semibold text-slate-900">{feature.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{feature.description}</p></article>
               })}
             </div>
