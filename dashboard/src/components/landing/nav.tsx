@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'FAQ', href: '/#faq' },
+  { label: 'Blog', href: 'https://blog.commentmind.website/', external: true },
 ]
 
 export function LandingNav() {
@@ -60,6 +61,8 @@ export function LandingNav() {
             <li key={l.href}>
               <a
                 href={l.href}
+                target={l.external ? '_blank' : undefined}
+                rel={l.external ? 'noreferrer' : undefined}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
               >
                 {l.label}
@@ -103,6 +106,8 @@ export function LandingNav() {
               <li key={l.href}>
                 <a
                   href={l.href}
+                  target={l.external ? '_blank' : undefined}
+                  rel={l.external ? 'noreferrer' : undefined}
                   onClick={() => setOpen(false)}
                   className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >

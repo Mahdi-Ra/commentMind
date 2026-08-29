@@ -22,6 +22,7 @@ const LINKS = {
   ],
   Company: [
     { label: 'About', href: '/about' },
+    { label: 'Blog', href: 'https://blog.commentmind.website/', external: true },
     { label: 'Contact', href: 'mailto:hello@commentmind.website' },
     { label: 'Privacy policy', href: '/privacy' },
     { label: 'Terms of service', href: '/terms' },
@@ -62,6 +63,8 @@ export function LandingFooter() {
                   <li key={item.label}>
                     <a
                       href={item.href}
+                      target={'external' in item && item.external ? '_blank' : undefined}
+                      rel={'external' in item && item.external ? 'noreferrer' : undefined}
                       className="text-sm text-slate-500 transition hover:text-slate-900"
                     >
                       {item.label}
