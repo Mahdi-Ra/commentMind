@@ -3,7 +3,7 @@
  * Plugin Name: CommentMind AI
  * Plugin URI:  https://commentmind.website/wordpress/
  * Description: Moderate WordPress comments, filter spam, and publish AI-assisted replies through CommentMind.
- * Version:     1.1.1
+ * Version:     1.1.2
  * Author:      CommentMind
  * Author URI:  https://commentmind.website/about/
  * Requires at least: 6.0
@@ -15,28 +15,27 @@
 
 defined('ABSPATH') || exit;
 
-define('CM_VERSION',    '1.1.1');
-define('CM_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('CM_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('CMMIND_VERSION', '1.1.2');
+define('CMMIND_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('CMMIND_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Load modules
-require_once CM_PLUGIN_DIR . 'includes/class-cm-api.php';
-require_once CM_PLUGIN_DIR . 'includes/class-cm-moderator.php';
-require_once CM_PLUGIN_DIR . 'includes/class-cm-settings.php';
-require_once CM_PLUGIN_DIR . 'admin/class-cm-admin.php';
+require_once CMMIND_PLUGIN_DIR . 'includes/class-cm-api.php';
+require_once CMMIND_PLUGIN_DIR . 'includes/class-cm-moderator.php';
+require_once CMMIND_PLUGIN_DIR . 'includes/class-cm-settings.php';
+require_once CMMIND_PLUGIN_DIR . 'admin/class-cm-admin.php';
 
 // Boot
-add_action('plugins_loaded', ['CommentMind_AI', 'init']);
+add_action('plugins_loaded', ['CMMIND_Plugin', 'init']);
 
-class CommentMind_AI {
+class CMMIND_Plugin {
 
     public static function init(): void {
-        load_plugin_textdomain('commentmind-ai', false, dirname(plugin_basename(__FILE__)) . '/languages');
-        $settings = CM_Settings::instance();
+        $settings = CMMIND_Settings::instance();
 
         // The admin settings page must always be available so new installs can be configured.
         if (is_admin()) {
-            CM_Admin::init();
+            CMMIND_Admin::init();
         }
 
         // Only run moderation hooks after the plugin has an API key.
@@ -44,7 +43,7 @@ class CommentMind_AI {
             return;
         }
 
-        $moderator = new CM_Moderator($settings);
+        $moderator = new CMMIND_Moderator($settings);
 
         // Hook: new comment inserted (before status saved)
         add_filter('preprocess_comment', [$moderator, 'handle_new_comment'], 10, 1);
@@ -57,5 +56,5 @@ class CommentMind_AI {
     public static function deactivate(): void {}
 }
 
-register_activation_hook(__FILE__,   ['CommentMind_AI', 'activate']);
-register_deactivation_hook(__FILE__, ['CommentMind_AI', 'deactivate']);
+register_activation_hook(__FILE__, ['CMMIND_Plugin', 'activate']);
+register_deactivation_hook(__FILE__, ['CMMIND_Plugin', 'deactivate']);

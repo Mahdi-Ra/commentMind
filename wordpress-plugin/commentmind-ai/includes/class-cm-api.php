@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-class CM_API {
+class CMMIND_API {
 
     private string $api_key;
     private string $api_url;
@@ -49,7 +49,7 @@ class CM_API {
 
         if ($status_code !== 200 || ! is_array($data)) {
             return new WP_Error(
-                'cm_api_error',
+                'cmmind_api_error',
                 sprintf('CommentMind API error %d: %s', $status_code, $body)
             );
         }

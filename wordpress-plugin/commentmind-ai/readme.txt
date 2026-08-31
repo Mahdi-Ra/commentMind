@@ -4,7 +4,7 @@ Tags: comments, comment moderation, spam filter, ai replies, customer support
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,11 +25,11 @@ You need a free or paid CommentMind account to use this plugin. Create an accoun
 * Supports English, Persian, Arabic, Turkish, and German reply settings.
 * Works with WooCommerce product comments and sends available product context to CommentMind.
 
-= External service =
+== External services ==
 
-This plugin connects to the CommentMind API at https://api.commentmind.website. When a visitor submits a comment, the plugin sends the comment content, author name and email, post title and URL, and available WooCommerce product context to CommentMind for moderation and reply generation.
+This plugin requires the CommentMind API at https://api.commentmind.website to moderate comments and generate optional replies. When a visitor submits a new WordPress comment, the plugin sends the comment content, author name, author email, post title, and post URL to the API. For WooCommerce product comments, it can also send available product name, SKU, price, and stock status. This happens only after the site owner installs, activates, and configures the plugin with a CommentMind API key.
 
-By using this plugin, you agree to CommentMind's Terms of Service and Privacy Policy:
+CommentMind provides the moderation and reply service. Its terms and privacy policy are available at:
 
 * https://commentmind.website/terms
 * https://commentmind.website/privacy
@@ -62,6 +62,12 @@ The plugin removes its local settings. Existing WordPress comments are not delet
 
 == Changelog ==
 
+= 1.1.2 =
+* Added unique CMMIND prefixes for plugin declarations and stored settings.
+* Improved external service disclosure.
+* Removed legacy translation loading for WordPress.org.
+* Prevented reply matching collisions during concurrent comment submissions.
+
 = 1.1.1 =
 * Fixed WordPress.org compatibility checks for PHP output tags.
 * Updated the tested WordPress version metadata.
@@ -75,6 +81,9 @@ The plugin removes its local settings. Existing WordPress comments are not delet
 * Fixed the admin settings menu for new installations.
 
 == Upgrade Notice ==
+
+= 1.1.2 =
+Improves WordPress.org compatibility, service disclosure, and concurrent comment handling.
 
 = 1.1.1 =
 Improves WordPress.org compatibility metadata and admin output compatibility.

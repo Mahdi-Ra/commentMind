@@ -1,14 +1,15 @@
 <?php
 defined('ABSPATH') || exit;
 
-class CM_Moderator {
+class CMMIND_Moderator {
 
-    private CM_Settings $settings;
-    private CM_API      $api;
+    private CMMIND_Settings $settings;
+    private CMMIND_API      $api;
+    private array $pending_replies = [];
 
-    public function __construct(CM_Settings $settings) {
+    public function __construct(CMMIND_Settings $settings) {
         $this->settings = $settings;
-        $this->api = new CM_API(
+        $this->api = new CMMIND_API(
             $settings->get('api_key'),
             $settings->get('api_url')
         );
@@ -19,7 +20,8 @@ class CM_Moderator {
 
     /**
      * Called via preprocess_comment filter — runs BEFORE comment is saved.
-     * We store analysis result in a transient, keyed by a session hash.
+     * The reply is kept in memory for the current comment-submission request.
+     * This avoids cross-request transient collisions for identical comments.
      */
     public function handle_new_comment(array $commentdata): array {
         // Skip trackbacks/pingbacks
@@ -50,17 +52,9 @@ class CM_Moderator {
             $commentdata['comment_approved'] = 1;
         }
 
-        // Store reply in session transient (comment not saved yet, no ID)
+        // Save the reply for comment_post, which runs in this same request after insert.
         if ($ai_reply && $this->settings->get('auto_reply')) {
-            $session_key = 'cm_reply_' . md5($commentdata['comment_content'] . $commentdata['comment_author_email']);
-            set_transient($session_key, [
-                'reply'      => $ai_reply,
-                'post_id'    => $commentdata['comment_post_ID'],
-                'session_key'=> $session_key,
-            ], 120); // 2 min TTL
-
-            // Pass session key through commentdata so we can pick it up in comment_post hook
-            $commentdata['cm_session_key'] = $session_key;
+            $this->pending_replies[$this->comment_fingerprint($commentdata)] = $ai_reply;
         }
 
         return $commentdata;
@@ -80,14 +74,13 @@ class CM_Moderator {
             return;
         }
 
-        $session_key = 'cm_reply_' . md5($comment->comment_content . $comment->comment_author_email);
-        $data = get_transient($session_key);
+        $fingerprint = $this->comment_fingerprint((array) $comment);
+        $ai_reply = $this->pending_replies[$fingerprint] ?? null;
+        unset($this->pending_replies[$fingerprint]);
 
-        if (! $data || empty($data['reply'])) {
+        if (! $ai_reply) {
             return;
         }
-
-        delete_transient($session_key);
 
         // Determine who posts the reply
         $reply_user_id = (int) $this->settings->get('reply_as_user');
@@ -107,9 +100,17 @@ class CM_Moderator {
             'comment_parent'       => $comment_id,
             'comment_author'       => $reply_author,
             'comment_author_email' => $reply_email,
-            'comment_content'      => $data['reply'],
+            'comment_content'      => $ai_reply,
             'comment_approved'     => 1,
             'user_id'              => $reply_user_id,
         ]);
+    }
+
+    private function comment_fingerprint(array $commentdata): string {
+        return hash('sha256', implode('|', [
+            (string) ($commentdata['comment_post_ID'] ?? ''),
+            (string) ($commentdata['comment_content'] ?? ''),
+            (string) ($commentdata['comment_author_email'] ?? ''),
+        ]));
     }
 }

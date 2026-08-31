@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-class CM_Admin {
+class CMMIND_Admin {
 
     public static function init(): void {
         add_action('admin_menu',       [__CLASS__, 'register_menu']);
@@ -22,7 +22,7 @@ class CM_Admin {
     }
 
     public static function register_settings(): void {
-        register_setting('commentmind_settings_group', 'commentmind_settings', [
+        register_setting('cmmind_settings_group', 'cmmind_settings', [
             'sanitize_callback' => [__CLASS__, 'sanitize_settings'],
         ]);
     }
@@ -43,14 +43,14 @@ class CM_Admin {
     }
 
     public static function enqueue_assets(string $hook): void {
-        if ($hook !== 'settings_page_commentmind-ai') {
+        if ($hook !== 'toplevel_page_commentmind-ai') {
             return;
         }
-        wp_enqueue_style('cm-admin', CM_PLUGIN_URL . 'assets/admin.css', [], CM_VERSION);
+        wp_enqueue_style('cmmind-admin', CMMIND_PLUGIN_URL . 'assets/admin.css', [], CMMIND_VERSION);
     }
 
     public static function render_settings_page(): void {
-        $settings = CM_Settings::instance();
+        $settings = CMMIND_Settings::instance();
         $users    = get_users(['role__in' => ['administrator', 'editor']]);
         ?>
         <div class="wrap cm-wrap">
@@ -58,7 +58,7 @@ class CM_Admin {
             <p class="cm-subtitle">AI-powered comment moderation for your website.</p>
 
             <form method="post" action="options.php">
-                <?php settings_fields('commentmind_settings_group'); ?>
+                <?php settings_fields('cmmind_settings_group'); ?>
 
                 <div class="cm-card">
                     <h2>🔑 Connection settings</h2>
@@ -66,7 +66,7 @@ class CM_Admin {
                         <tr>
                             <th>API Key</th>
                             <td>
-                                <input type="password" name="commentmind_settings[api_key]"
+                                <input type="password" name="cmmind_settings[api_key]"
                                        value="<?php echo esc_attr($settings->get('api_key')); ?>"
                                        class="regular-text" placeholder="cm_..." />
                                 <p class="description">Get your site API key from the CommentMind dashboard.</p>
@@ -75,7 +75,7 @@ class CM_Admin {
                         <tr>
                             <th>API URL</th>
                             <td>
-                                <input type="url" name="commentmind_settings[api_url]"
+                                <input type="url" name="cmmind_settings[api_url]"
                                        value="<?php echo esc_attr($settings->get('api_url')); ?>"
                                        class="regular-text" />
                             </td>
@@ -89,7 +89,7 @@ class CM_Admin {
                         <tr>
                             <th>Reply tone</th>
                             <td>
-                                <select name="commentmind_settings[tone]">
+                                <select name="cmmind_settings[tone]">
                                     <?php
                                     $tones = ['friendly' => 'Friendly', 'formal' => 'Formal', 'professional' => 'Professional'];
                                     foreach ($tones as $val => $label) {
@@ -107,7 +107,7 @@ class CM_Admin {
                         <tr>
                             <th>Reply language</th>
                             <td>
-                                <select name="commentmind_settings[language]">
+                                <select name="cmmind_settings[language]">
                                     <?php
                                     $languages = [
                                         'en' => 'English',
@@ -131,7 +131,7 @@ class CM_Admin {
                         <tr>
                             <th>Reply author</th>
                             <td>
-                                <select name="commentmind_settings[reply_as_user]">
+                                <select name="cmmind_settings[reply_as_user]">
                                     <option value="0">Support (default)</option>
                                     <?php foreach ($users as $user) : ?>
                                         <option value="<?php echo esc_attr($user->ID); ?>"
@@ -152,7 +152,7 @@ class CM_Admin {
                             <th>Auto-reply</th>
                             <td>
                                 <label>
-                                    <input type="checkbox" name="commentmind_settings[auto_reply]"
+                                    <input type="checkbox" name="cmmind_settings[auto_reply]"
                                            value="1" <?php echo checked($settings->get('auto_reply'), true, false); ?> />
                                     Send AI replies to comments
                                 </label>
@@ -162,7 +162,7 @@ class CM_Admin {
                             <th>Auto-approve</th>
                             <td>
                                 <label>
-                                    <input type="checkbox" name="commentmind_settings[auto_approve]"
+                                    <input type="checkbox" name="cmmind_settings[auto_approve]"
                                            value="1" <?php echo checked($settings->get('auto_approve'), true, false); ?> />
                                     Publish valid comments without manual approval
                                 </label>
@@ -172,7 +172,7 @@ class CM_Admin {
                             <th>Spam filter</th>
                             <td>
                                 <label>
-                                    <input type="checkbox" name="commentmind_settings[auto_spam]"
+                                    <input type="checkbox" name="cmmind_settings[auto_spam]"
                                            value="1" <?php echo checked($settings->get('auto_spam'), true, false); ?> />
                                     Automatically mark spam comments
                                 </label>

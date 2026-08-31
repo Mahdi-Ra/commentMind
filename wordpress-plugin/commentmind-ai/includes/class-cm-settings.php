@@ -1,11 +1,12 @@
 <?php
 defined('ABSPATH') || exit;
 
-class CM_Settings {
+class CMMIND_Settings {
 
-    private static ?CM_Settings $instance = null;
+    private static ?CMMIND_Settings $instance = null;
     private array $options;
-    private const OPTION_KEY = 'commentmind_settings';
+    private const OPTION_KEY = 'cmmind_settings';
+    private const LEGACY_OPTION_KEY = 'commentmind_settings';
 
     private array $defaults = [
         'api_key'          => '',
@@ -19,7 +20,10 @@ class CM_Settings {
     ];
 
     private function __construct() {
-        $saved = get_option(self::OPTION_KEY, []);
+        $saved = get_option(self::OPTION_KEY, null);
+        if (!is_array($saved)) {
+            $saved = get_option(self::LEGACY_OPTION_KEY, []);
+        }
         $this->options = array_merge($this->defaults, $saved);
     }
 
