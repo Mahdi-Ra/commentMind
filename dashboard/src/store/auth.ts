@@ -6,6 +6,7 @@ interface User {
   email: string
   full_name?: string
   plan: string
+  is_verified: boolean
   is_admin?: boolean
   plan_display_name?: string
   plan_max_sites?: number

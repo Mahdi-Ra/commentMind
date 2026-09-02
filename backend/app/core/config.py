@@ -44,12 +44,13 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_OAUTH_REDIRECT_URI: str = ""
 
-    # Optional SMTP for password reset emails
+    # SMTP for transactional account emails
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
+    SMTP_FROM_NAME: str = "CommentMind"
     SMTP_USE_TLS: bool = True
 
     class Config:

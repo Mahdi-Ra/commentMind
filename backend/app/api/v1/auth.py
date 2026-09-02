@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -9,9 +9,10 @@ from app.core.config import settings
 from app.core.security import decode_token, get_password_hash, verify_password, create_access_token
 from app.core.plans import plan_info
 from app.models.user import User
-from app.services.email_service import send_password_reset_email
+from app.services.email_service import send_password_reset_email, send_verification_email
 from app.schemas.auth import (
     PasswordResetConfirm,
+    EmailVerificationConfirm,
     PasswordResetRequest,
     PasswordResetResponse,
     UserRegister,
@@ -40,6 +41,7 @@ def _user_out(user: User) -> UserOut:
         full_name=user.full_name,
         plan=user.plan,
         is_active=user.is_active,
+        is_verified=user.is_verified,
         is_admin=is_platform_admin(user),
         plan_display_name=info["display_name"],
         plan_max_sites=info["max_sites"],
@@ -51,7 +53,11 @@ def _user_out(user: User) -> UserOut:
 
 
 @router.post("/register", response_model=Token)
-async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
+async def register(
+    payload: UserRegister,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(select(User).where(User.email == payload.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -63,6 +69,13 @@ async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.flush()
+
+    verification_token = create_access_token(
+        {"sub": user.id, "purpose": "email_verification"},
+        expires_delta=timedelta(hours=24),
+    )
+    verification_url = f"{settings.FRONTEND_BASE_URL}/auth?{urlencode({'verify_token': verification_token})}"
+    background_tasks.add_task(send_verification_email, user.email, verification_url)
 
     token = create_access_token({"sub": user.id})
     return Token(access_token=token)
@@ -81,7 +94,11 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/forgot-password", response_model=PasswordResetResponse)
-async def forgot_password(payload: PasswordResetRequest, db: AsyncSession = Depends(get_db)):
+async def forgot_password(
+    payload: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
@@ -91,11 +108,43 @@ async def forgot_password(payload: PasswordResetRequest, db: AsyncSession = Depe
             expires_delta=timedelta(minutes=30),
         )
         reset_url = f"{settings.FRONTEND_BASE_URL}/auth?{urlencode({'reset_token': token})}"
-        send_password_reset_email(user.email, reset_url)
+        background_tasks.add_task(send_password_reset_email, user.email, reset_url)
 
     return PasswordResetResponse(
         message="If an account exists for that email, a reset link has been sent."
     )
+
+
+@router.post("/verify-email", response_model=PasswordResetResponse)
+async def verify_email(payload: EmailVerificationConfirm, db: AsyncSession = Depends(get_db)):
+    data = decode_token(payload.token)
+    if not data or data.get("purpose") != "email_verification" or not data.get("sub"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification link")
+
+    result = await db.execute(select(User).where(User.id == data["sub"]))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification link")
+
+    user.is_verified = True
+    await db.flush()
+    return PasswordResetResponse(message="Your email address has been verified.")
+
+
+@router.post("/resend-verification", response_model=PasswordResetResponse)
+async def resend_verification(
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.is_verified:
+        verification_token = create_access_token(
+            {"sub": current_user.id, "purpose": "email_verification"},
+            expires_delta=timedelta(hours=24),
+        )
+        verification_url = f"{settings.FRONTEND_BASE_URL}/auth?{urlencode({'verify_token': verification_token})}"
+        background_tasks.add_task(send_verification_email, current_user.email, verification_url)
+
+    return PasswordResetResponse(message="If your email is not yet verified, a verification link has been sent.")
 
 
 @router.post("/reset-password", status_code=204)

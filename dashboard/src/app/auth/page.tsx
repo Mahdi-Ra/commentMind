@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
@@ -24,6 +24,7 @@ export default function AuthPage() {
 function AuthContent() {
   const searchParams = useSearchParams()
   const resetToken = searchParams.get('reset_token')
+  const verificationToken = searchParams.get('verify_token')
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>(
     resetToken ? 'reset' : 'login',
   )
@@ -34,6 +35,20 @@ function AuthContent() {
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuthStore()
   const router = useRouter()
+
+  useEffect(() => {
+    if (!verificationToken) return
+
+    authApi.verifyEmail(verificationToken)
+      .then(() => toast.success('Email verified. You can now sign in.'))
+      .catch((err: unknown) => {
+        const detail = err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined
+        toast.error(detail || 'Could not verify this email link.')
+      })
+      .finally(() => router.replace('/auth'))
+  }, [router, verificationToken])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

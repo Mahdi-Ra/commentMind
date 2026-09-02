@@ -41,12 +41,17 @@ class PasswordResetConfirm(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class EmailVerificationConfirm(BaseModel):
+    token: str
+
+
 class UserOut(BaseModel):
     id: str
     email: str
     full_name: Optional[str]
     plan: str
     is_active: bool
+    is_verified: bool
     is_admin: bool = False
     # Plan limits — populated by the endpoint, not from the ORM row
     plan_display_name: Optional[str] = None

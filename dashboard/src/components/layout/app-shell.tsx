@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap, ShieldCheck, Mail } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { Logo } from '@/components/brand/logo'
 import { OnboardingModal } from '@/components/dashboard/onboarding-modal'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/button'
+import { authApi } from '@/lib/api'
+import { toast } from 'sonner'
 
 const ONBOARDING_KEY = 'cm_onboarding_done'
 
@@ -17,6 +19,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [resendingVerification, setResendingVerification] = useState(false)
+
+  const resendVerification = async () => {
+    setResendingVerification(true)
+    try {
+      const response = await authApi.resendVerification()
+      toast.success(response.data.message)
+    } catch {
+      toast.error('Could not send a verification email. Please try again.')
+    } finally {
+      setResendingVerification(false)
+    }
+  }
 
   useEffect(() => {
     if (!token) {
@@ -137,7 +152,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onLogout={() => { logout(); router.push('/auth') }}
           />
         </header>
-        <main className="flex-1 animate-fade-in">{children}</main>
+        <main className="flex-1 animate-fade-in">
+          {user && !isAdmin && !user.is_verified && (
+            <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-6">
+              <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 text-sm">
+                <p className="flex items-center gap-2 text-amber-900"><Mail className="h-4 w-4" />Verify <strong>{user.email}</strong> to secure your account.</p>
+                <button type="button" onClick={resendVerification} disabled={resendingVerification} className="font-semibold text-amber-900 underline underline-offset-2 disabled:opacity-50">{resendingVerification ? 'Sending...' : 'Resend email'}</button>
+              </div>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
 
       {!isAdmin && <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} onAddSite={() => {}} hasSite={false} />}
