@@ -51,3 +51,37 @@ async def check_widget_rate_limit(site_id: str, limit: int | None = None) -> Non
             )
         hits.append(now)
         _memory[site_id] = hits
+
+
+async def check_rate_limit(key: str, *, limit: int, window_seconds: int, message: str) -> None:
+    """Shared account-rate limiter, backed by Redis with a process-local fallback."""
+    namespaced_key = f"account:rl:{key}"
+    now = time.time()
+    window_start = now - window_seconds
+    try:
+        import redis.asyncio as aioredis
+
+        client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        try:
+            pipe = client.pipeline()
+            pipe.zremrangebyscore(namespaced_key, 0, window_start)
+            pipe.zadd(namespaced_key, {str(now): now})
+            pipe.zcard(namespaced_key)
+            pipe.expire(namespaced_key, window_seconds + 60)
+            results = await pipe.execute()
+            if results[2] > limit:
+                raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=message)
+        finally:
+            await client.aclose()
+        return
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    with _memory_lock:
+        hits = [hit for hit in _memory[namespaced_key] if hit > window_start]
+        if len(hits) >= limit:
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=message)
+        hits.append(now)
+        _memory[namespaced_key] = hits

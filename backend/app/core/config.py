@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "CommentMind"
     SMTP_USE_TLS: bool = True
 
+    # Account protection limits
+    AUTH_LOGIN_LIMIT_PER_15_MINUTES: int = 10
+    AUTH_REGISTER_LIMIT_PER_HOUR: int = 5
+    AUTH_PASSWORD_RESET_LIMIT_PER_HOUR: int = 3
+    AUTH_VERIFICATION_RESEND_LIMIT_PER_HOUR: int = 3
+
     class Config:
         env_file = ".env"
 

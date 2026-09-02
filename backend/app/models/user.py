@@ -13,6 +13,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    auth_version: Mapped[int] = mapped_column(default=0, nullable=False)
     plan: Mapped[str] = mapped_column(String, default="free")  # free, starter, pro, agency
     trial_plan: Mapped[str] = mapped_column(String, nullable=True)
     trial_started_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)

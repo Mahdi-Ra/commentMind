@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Eye, EyeOff, User, Lock, Zap } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
@@ -26,7 +27,8 @@ const PLAN_COLORS: Record<string, 'neutral' | 'info' | 'success' | 'warning'> = 
 }
 
 export default function AccountPage() {
-  const { user, setUser } = useAuthStore()
+  const { user, setUser, logout } = useAuthStore()
+  const router = useRouter()
 
   const [fullName, setFullName] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
@@ -62,7 +64,9 @@ export default function AccountPage() {
     try {
       await authApi.changePassword(currentPassword, newPassword)
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
-      toast.success('Password changed successfully')
+      logout()
+      toast.success('Password changed. Please sign in again.')
+      router.replace('/auth')
     } catch (err: unknown) {
       toast.error(getErrorDetail(err) || 'Failed to change password')
     } finally {

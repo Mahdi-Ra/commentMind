@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+import hashlib
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -23,8 +25,17 @@ from app.schemas.auth import (
     UserPasswordChange,
 )
 from app.api.v1.deps import get_current_user, is_platform_admin
+from app.core.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _email_key(email: str) -> str:
+    return hashlib.sha256(email.strip().lower().encode()).hexdigest()[:24]
 
 
 def _user_out(user: User) -> UserOut:
@@ -56,8 +67,13 @@ def _user_out(user: User) -> UserOut:
 async def register(
     payload: UserRegister,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
+    await check_rate_limit(
+        f"register:{_client_ip(request)}", limit=settings.AUTH_REGISTER_LIMIT_PER_HOUR, window_seconds=3600,
+        message="Too many sign-up attempts. Please try again later.",
+    )
     result = await db.execute(select(User).where(User.email == payload.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -77,19 +93,23 @@ async def register(
     verification_url = f"{settings.FRONTEND_BASE_URL}/auth?{urlencode({'verify_token': verification_token})}"
     background_tasks.add_task(send_verification_email, user.email, verification_url)
 
-    token = create_access_token({"sub": user.id})
+    token = create_access_token({"sub": user.id, "av": user.auth_version})
     return Token(access_token=token)
 
 
 @router.post("/login", response_model=Token)
-async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(payload: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
+    await check_rate_limit(
+        f"login:{_client_ip(request)}:{_email_key(payload.email)}", limit=settings.AUTH_LOGIN_LIMIT_PER_15_MINUTES, window_seconds=900,
+        message="Too many sign-in attempts. Please try again in 15 minutes.",
+    )
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": user.id})
+    token = create_access_token({"sub": user.id, "av": user.auth_version})
     return Token(access_token=token)
 
 
@@ -97,8 +117,13 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
 async def forgot_password(
     payload: PasswordResetRequest,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
+    await check_rate_limit(
+        f"reset:{_client_ip(request)}:{_email_key(payload.email)}", limit=settings.AUTH_PASSWORD_RESET_LIMIT_PER_HOUR, window_seconds=3600,
+        message="Too many password reset requests. Please try again later.",
+    )
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
@@ -134,8 +159,13 @@ async def verify_email(payload: EmailVerificationConfirm, db: AsyncSession = Dep
 @router.post("/resend-verification", response_model=PasswordResetResponse)
 async def resend_verification(
     background_tasks: BackgroundTasks,
+    request: Request,
     current_user: User = Depends(get_current_user),
 ):
+    await check_rate_limit(
+        f"verification:{current_user.id}", limit=settings.AUTH_VERIFICATION_RESEND_LIMIT_PER_HOUR, window_seconds=3600,
+        message="Too many verification emails requested. Please try again later.",
+    )
     if not current_user.is_verified:
         verification_token = create_access_token(
             {"sub": current_user.id, "purpose": "email_verification"},
@@ -165,6 +195,7 @@ async def reset_password(payload: PasswordResetConfirm, db: AsyncSession = Depen
         )
 
     user.hashed_password = get_password_hash(payload.new_password)
+    user.auth_version += 1
 
 
 @router.get("/me", response_model=UserOut)
@@ -202,4 +233,5 @@ async def change_password(
             detail="New password must be different from the current password",
         )
     current_user.hashed_password = get_password_hash(payload.new_password)
+    current_user.auth_version += 1
     await db.flush()
