@@ -8,6 +8,7 @@ const LINKS = {
     { label: 'Pricing', href: '/#pricing' },
     { label: 'FAQ', href: '/#faq' },
     { label: 'AI moderation guide', href: '/guides/ai-comment-moderation/' },
+    { label: 'AI product Q&A guide', href: '/guides/ai-product-qa/' },
   ],
   Developers: [
     { label: 'API docs', href: '/docs' },
