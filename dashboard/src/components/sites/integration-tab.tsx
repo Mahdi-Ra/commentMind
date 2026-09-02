@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Code2, Copy, Plug, CheckCircle2, Download } from 'lucide-react'
-import { sitesApi } from '@/lib/api'
+import { Code2, Copy, Plug, CheckCircle2, Download, ShoppingBag, RefreshCw } from 'lucide-react'
+import { shopifyApi, sitesApi } from '@/lib/api'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label, Input } from '@/components/ui/input'
@@ -22,9 +22,13 @@ export function IntegrationTab({ siteId }: { siteId: string }) {
   const [snippet, setSnippet] = useState('')
   const [testing, setTesting] = useState(false)
   const [testOk, setTestOk] = useState<boolean | null>(null)
+  const [shopDomain, setShopDomain] = useState('')
+  const [shopify, setShopify] = useState<{ configured: boolean; connected: boolean; shop_domain?: string; product_count: number; last_synced_at?: string } | null>(null)
+  const [shopifyLoading, setShopifyLoading] = useState(false)
 
   useEffect(() => {
     loadEmbed()
+    loadShopify()
   }, [siteId])
 
   const loadEmbed = async () => {
@@ -34,6 +38,47 @@ export function IntegrationTab({ siteId }: { siteId: string }) {
       setSnippet(res.data.snippet)
     } catch {
       toast.error('Failed to load integration settings')
+    }
+  }
+
+  const loadShopify = async () => {
+    try {
+      const res = await shopifyApi.status(siteId)
+      setShopify(res.data)
+    } catch {
+      setShopify(null)
+    }
+  }
+
+  const connectShopify = async () => {
+    if (!shopDomain.trim()) {
+      toast.error('Enter your store.myshopify.com domain')
+      return
+    }
+    setShopifyLoading(true)
+    try {
+      const res = await shopifyApi.authorize(siteId, shopDomain.trim())
+      window.location.assign(res.data.url)
+    } catch (err: unknown) {
+      const detail = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+        : undefined
+      toast.error(detail || 'Could not start Shopify connection')
+    } finally {
+      setShopifyLoading(false)
+    }
+  }
+
+  const syncShopify = async () => {
+    setShopifyLoading(true)
+    try {
+      const res = await shopifyApi.sync(siteId)
+      setShopify(res.data)
+      toast.success('Product catalog synced')
+    } catch {
+      toast.error('Could not sync the product catalog')
+    } finally {
+      setShopifyLoading(false)
     }
   }
 
@@ -84,6 +129,40 @@ export function IntegrationTab({ siteId }: { siteId: string }) {
 
   return (
     <div className="space-y-5">
+      <Card>
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700"><Code2 className="h-5 w-5" /></span>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Webflow</h3>
+            <p className="mt-1 text-sm text-slate-500">Add the JavaScript widget below in a Webflow Embed element. It uses the current CMS page title and URL automatically, so one embed works on static pages and Collection templates.</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700"><ShoppingBag className="h-5 w-5" /></span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-slate-900">Shopify product Q&A</h3>
+            <p className="mt-1 text-sm text-slate-500">Connect your Shopify store to sync products into the knowledge base, then add the CommentMind app block to your product template.</p>
+            {shopify?.connected ? (
+              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+                <p className="font-semibold">Connected to {shopify.shop_domain}</p>
+                <p className="mt-1 text-emerald-700">{shopify.product_count} products synced{shopify.last_synced_at ? ` · Last sync ${new Date(shopify.last_synced_at).toLocaleString()}` : ''}</p>
+                <Button size="sm" variant="secondary" className="mt-3" loading={shopifyLoading} onClick={syncShopify}><RefreshCw className="h-4 w-4" />Sync catalog</Button>
+              </div>
+            ) : shopify?.configured ? (
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <Input value={shopDomain} onChange={(event) => setShopDomain(event.target.value)} placeholder="your-store.myshopify.com" />
+                <Button className="shrink-0" loading={shopifyLoading} onClick={connectShopify}>Connect Shopify</Button>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-amber-700">Shopify connection is being configured. You can still use the JavaScript widget on a Shopify page today.</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
       <Card>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">

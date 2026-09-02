@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_OAUTH_REDIRECT_URI: str = ""
 
+    # Shopify public app (optional until the Shopify integration is configured)
+    SHOPIFY_CLIENT_ID: str = ""
+    SHOPIFY_CLIENT_SECRET: str = ""
+    SHOPIFY_OAUTH_REDIRECT_URI: str = ""
+    SHOPIFY_API_VERSION: str = "2026-01"
+
     # SMTP for transactional account emails
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

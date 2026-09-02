@@ -21,6 +21,10 @@
     apiUrl: (script && script.getAttribute('data-api-url')) || '',
     pageTitle: (script && script.getAttribute('data-page-title')) || document.title,
     pageUrl: (script && script.getAttribute('data-page-url')) || window.location.href,
+    productSku: script && script.getAttribute('data-product-sku'),
+    productPrice: script && script.getAttribute('data-product-price'),
+    productStockStatus: script && script.getAttribute('data-product-stock-status'),
+    productContext: script && script.getAttribute('data-product-context'),
     rootId: (script && script.getAttribute('data-root')) || 'commentmind-root',
   };
 
@@ -237,6 +241,10 @@
         author_email: author_email || undefined,
         post_title: cfg.pageTitle,
         post_url: cfg.pageUrl,
+        product_sku: cfg.productSku || undefined,
+        product_price: cfg.productPrice || undefined,
+        product_stock_status: cfg.productStockStatus || undefined,
+        product_context: cfg.productContext || undefined,
       },
     })
       .then(function (result) {

@@ -151,3 +151,11 @@ export const searchConsoleApi = {
     api.post(`/sites/${siteId}/search-console/property`, { property_url }),
   disconnect: (siteId: string) => api.delete(`/sites/${siteId}/search-console`),
 }
+
+// ─── Shopify ─────────────────────────────────────────────────────────────────
+export const shopifyApi = {
+  status: (siteId: string) => api.get(`/sites/${siteId}/shopify`),
+  authorize: (siteId: string, shop: string) => api.post(`/sites/${siteId}/shopify/authorize`, { shop }),
+  sync: (siteId: string) => api.post(`/sites/${siteId}/shopify/sync`),
+  disconnect: (siteId: string) => api.delete(`/sites/${siteId}/shopify`),
+}

@@ -1,0 +1,31 @@
+<div id="commentmind-root"></div>
+<script
+  src="https://api.commentmind.website/static/widget.js"
+  data-api-key="{{ block.settings.api_key }}"
+  data-api-url="https://api.commentmind.website"
+  data-page-title="{{ product.title | escape }}"
+  data-page-url="{{ shop.url }}{{ product.url }}"
+  data-product-sku="{{ product.selected_or_first_available_variant.sku | escape }}"
+  data-product-price="{{ product.selected_or_first_available_variant.price | money_without_currency | escape }}"
+  data-product-stock-status="{% if product.selected_or_first_available_variant.available %}in stock{% else %}out of stock{% endif %}"
+  data-product-context="{{ product.description | strip_html | truncate: 1500 | escape }}"
+  async
+></script>
+
+{% schema %}
+{
+  "name": "CommentMind product Q&A",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_key",
+      "label": "CommentMind site key",
+      "info": "Copy the key from CommentMind Dashboard > Site > API Key."
+    }
+  ]
+}
+{% endschema %}
