@@ -163,6 +163,11 @@ async def confirm_payment(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The customer must verify their email address before a plan can be activated.",
+        )
 
     get_limits(payment.plan)  # validates fallback behavior for known plan strings
     payment.status = "confirmed"

@@ -7,7 +7,7 @@ from app.models.user import User
 from app.schemas.knowledge import KnowledgeAdd, KnowledgeOut
 from app.services.site_service import get_site
 from app.services.embedding_service import embed_chunk
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_customer_user
 
 router = APIRouter(prefix="/sites/{site_id}/knowledge", tags=["Knowledge Base"])
 
@@ -49,7 +49,7 @@ async def add_knowledge(
     background_tasks: BackgroundTasks,
     payload: KnowledgeAdd,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     chunks_text = _chunk_text(payload.content)
@@ -76,7 +76,7 @@ async def upload_document(
     site_id: str,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
     file: UploadFile = File(...),
 ):
     await get_site(db, site_id, current_user.id)
@@ -113,7 +113,7 @@ async def upload_document(
 async def list_knowledge(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     result = await db.execute(
@@ -127,7 +127,7 @@ async def delete_knowledge(
     site_id: str,
     chunk_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     await db.execute(
@@ -142,7 +142,7 @@ async def delete_knowledge(
 async def clear_knowledge(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     await db.execute(

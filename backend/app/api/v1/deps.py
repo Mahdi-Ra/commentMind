@@ -55,6 +55,11 @@ async def get_customer_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Platform admins can only use the admin console",
         )
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Verify your email address before activating a plan or using CommentMind.",
+        )
     return current_user
 
 
@@ -67,5 +72,10 @@ async def get_site_from_api_key(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key",
+        )
+    if not site.owner or not site.owner.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The account owner must verify their email address before this site can use CommentMind.",
         )
     return site

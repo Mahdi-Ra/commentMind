@@ -9,7 +9,7 @@ from app.models.comment import Comment
 from app.models.site import Site
 from app.schemas.comment import CommentModerateIn, CommentOut, CommentStats
 from app.services.comment_service import get_comment_stats
-from app.api.v1.deps import get_current_user
+from app.api.v1.deps import get_customer_user
 from app.models.user import User
 from app.services.site_service import get_user_sites, get_site
 from app.services.audit_service import write_audit_log
@@ -59,7 +59,7 @@ async def list_comments(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)  # ownership check
 
@@ -76,7 +76,7 @@ async def list_comments(
 async def stats(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     return await get_comment_stats(db, site_id)
@@ -86,7 +86,7 @@ async def stats(
 async def analytics(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
 
@@ -112,7 +112,7 @@ async def analytics(
 async def site_insights(
     site_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     return await build_insights(db, InsightScope(site_ids=[site_id]))
@@ -121,7 +121,7 @@ async def site_insights(
 @router.get("/insights", response_model=InsightSummary)
 async def account_insights(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     sites = await get_user_sites(db, current_user.id)
     return await build_insights(db, InsightScope(site_ids=[site.id for site in sites]))
@@ -133,7 +133,7 @@ async def moderate_comment(
     comment_id: str,
     payload: CommentModerateIn,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     result = await db.execute(
@@ -188,7 +188,7 @@ async def add_comment_feedback(
     comment_id: str,
     payload: CommentFeedbackIn,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     await get_site(db, site_id, current_user.id)
     result = await db.execute(
@@ -223,7 +223,7 @@ async def add_comment_feedback(
 @router.get("/usage", response_model=UsageSummary)
 async def usage_summary(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_customer_user),
 ):
     """Return total comments this month + site count for the current user."""
     sites = await get_user_sites(db, current_user.id)

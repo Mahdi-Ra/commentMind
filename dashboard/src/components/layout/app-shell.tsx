@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isAdmin = Boolean(user?.is_admin)
   const isFree = !isAdmin && (!user?.plan || user.plan === 'free')
+  const needsVerification = Boolean(user && !isAdmin && !user.is_verified)
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -153,19 +154,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         </header>
         <main className="flex-1 animate-fade-in">
-          {user && !isAdmin && !user.is_verified && (
-            <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-6">
-              <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 text-sm">
-                <p className="flex items-center gap-2 text-amber-900"><Mail className="h-4 w-4" />Verify <strong>{user.email}</strong> to secure your account.</p>
-                <button type="button" onClick={resendVerification} disabled={resendingVerification} className="font-semibold text-amber-900 underline underline-offset-2 disabled:opacity-50">{resendingVerification ? 'Sending...' : 'Resend email'}</button>
+          {needsVerification ? (
+            <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl items-center px-4 py-10 sm:px-6">
+              <div className="w-full rounded-lg border border-amber-200 bg-amber-50 p-6 text-center sm:p-8">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700"><Mail className="h-6 w-6" /></span>
+                <h1 className="mt-4 text-xl font-semibold text-slate-900">Verify your email to activate your account</h1>
+                <p className="mt-2 text-sm leading-6 text-slate-600">We sent a verification link to <strong>{user?.email}</strong>. Open it to activate your Free plan or start a paid trial.</p>
+                <Button className="mt-6" onClick={resendVerification} loading={resendingVerification}>Resend verification email</Button>
               </div>
-            </div>
-          )}
-          {children}
+            </section>
+          ) : children}
         </main>
       </div>
 
-      {!isAdmin && <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} onAddSite={() => {}} hasSite={false} />}
+      {!isAdmin && !needsVerification && <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} onAddSite={() => {}} hasSite={false} />}
     </div>
   )
 }
