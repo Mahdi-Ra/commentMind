@@ -1,5 +1,13 @@
 /* CommentMind AI — Admin Styles */
-body { direction: rtl; }
+.cm-wrap {
+    direction: ltr;
+    text-align: left;
+}
+
+body.rtl .cm-wrap {
+    direction: rtl;
+    text-align: right;
+}
 
 .cm-wrap h1 {
     font-size: 2rem;
@@ -34,6 +42,10 @@ body { direction: rtl; }
     background: #f9fff9;
 }
 
-.form-table th {
+.cm-wrap .form-table th {
+    text-align: left;
+}
+
+body.rtl .cm-wrap .form-table th {
     text-align: right;
 }

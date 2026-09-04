@@ -4,7 +4,7 @@ Tags: comments, comment moderation, spam filter, ai replies, customer support
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -61,6 +61,9 @@ Yes. When a comment is attached to a WooCommerce product, available product name
 The plugin removes its local settings. Existing WordPress comments are not deleted, and your CommentMind account remains available.
 
 == Changelog ==
+
+= 1.1.3 =
+* Fixed the admin layout direction so English WordPress dashboards remain LTR while RTL WordPress locales remain RTL.
 
 = 1.1.2 =
 * Added unique CMMIND prefixes for plugin declarations and stored settings.
