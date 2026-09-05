@@ -43,6 +43,7 @@ interface Site {
   auto_approve: boolean
   auto_spam: boolean
   is_active: boolean
+  last_connected_at?: string
 }
 
 interface Stats {
@@ -181,11 +182,13 @@ export default function DashboardPage() {
               <p className="mt-1 text-sm text-slate-500">Open comments or update settings for a connected site.</p>
             </div>
             <a
-              href="/downloads/commentmind-ai-wordpress-plugin.zip"
+              href="https://wordpress.org/plugins/commentmind-ai/"
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               <Download className="h-4 w-4" />
-              Download WordPress plugin
+              Get the WordPress plugin
             </a>
           </div>
 
@@ -391,6 +394,7 @@ function SiteCard({ site, stats }: { site: Site; stats?: Stats }) {
       )}
 
       <div className="mt-4 flex flex-wrap gap-1.5">
+        <Badge variant={site.last_connected_at ? 'success' : 'neutral'}>{site.last_connected_at ? 'Connected' : 'Not connected'}</Badge>
         {site.auto_reply && <Badge variant="info">Auto-reply</Badge>}
         {site.auto_approve && <Badge variant="success">Auto-approve</Badge>}
         {site.auto_spam && <Badge variant="warning">Spam filter</Badge>}

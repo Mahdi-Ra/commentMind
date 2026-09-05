@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Code2, Copy, Plug, CheckCircle2, Download, ShoppingBag, RefreshCw } from 'lucide-react'
+import { Code2, Copy, Plug, CheckCircle2, Download, ShoppingBag, RefreshCw, ExternalLink } from 'lucide-react'
 import { shopifyApi, sitesApi } from '@/lib/api'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -172,16 +172,19 @@ export function IntegrationTab({ siteId }: { siteId: string }) {
             <div>
               <h3 className="text-sm font-semibold text-slate-900">WordPress plugin</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Download the plugin, activate it in WordPress, then paste this site&apos;s API key.
+                Install from the official WordPress Plugin Directory for trusted updates, then paste this site&apos;s API key.
               </p>
             </div>
           </div>
           <a
-            href="/downloads/commentmind-ai-wordpress-plugin.zip"
+            href="https://wordpress.org/plugins/commentmind-ai/"
+            target="_blank"
+            rel="noreferrer"
             className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
           >
             <Download className="h-4 w-4" />
-            Download plugin
+            Install from WordPress.org
+            <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>
       </Card>

@@ -82,17 +82,18 @@ export function HowItWorks() {
                 WordPress plugin download
               </h3>
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Install the plugin manually today, then paste your site API key from the dashboard.
-                WordPress.org distribution can come later.
+                Install directly from the official WordPress Plugin Directory, then paste your site API key from the dashboard.
               </p>
             </div>
           </div>
           <Link
-            href="/downloads/commentmind-ai-wordpress-plugin.zip"
+            href="https://wordpress.org/plugins/commentmind-ai/"
+            target="_blank"
+            rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Download className="h-4 w-4" />
-            Download plugin
+            Install from WordPress.org
           </Link>
         </div>
       </div>
