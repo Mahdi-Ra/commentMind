@@ -116,6 +116,16 @@ export default function AccountPage() {
             </div>
           </dl>
 
+          {user?.trial_ends_at ? (
+            <p className="mt-4 rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900">
+              Your trial ends on <strong>{new Date(user.trial_ends_at).toLocaleDateString()}</strong>.
+            </p>
+          ) : user?.plan_ends_at ? (
+            <p className="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Your plan renews on <strong>{new Date(user.plan_ends_at).toLocaleDateString()}</strong>.
+            </p>
+          ) : null}
+
           {user?.plan === 'free' && (
             <p className="mt-4 text-xs text-slate-400">
               Need more capacity?{' '}

@@ -5,7 +5,7 @@ import hashlib
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.security import decode_token, get_password_hash, verify_password, create_access_token
@@ -23,6 +23,7 @@ from app.schemas.auth import (
     UserOut,
     UserProfileUpdate,
     UserPasswordChange,
+    OnboardingStatus,
 )
 from app.api.v1.deps import get_current_user, is_platform_admin
 from app.core.rate_limit import check_rate_limit
@@ -60,6 +61,7 @@ def _user_out(user: User) -> UserOut:
         trial_plan=user.trial_plan,
         trial_ends_at=user.trial_ends_at,
         trial_days_left=trial_days_left,
+        plan_ends_at=user.plan_ends_at,
     )
 
 
@@ -201,6 +203,29 @@ async def reset_password(payload: PasswordResetConfirm, db: AsyncSession = Depen
 @router.get("/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)):
     return _user_out(current_user)
+
+
+@router.get("/onboarding", response_model=OnboardingStatus)
+async def onboarding_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.comment import Comment
+    from app.models.knowledge import KnowledgeChunk
+    from app.models.site import Site
+
+    sites = list((await db.execute(select(Site).where(Site.owner_id == current_user.id))).scalars().all())
+    site_ids = [site.id for site in sites]
+    if not site_ids:
+        return OnboardingStatus(has_site=False, has_knowledge=False, has_connection=False, has_processed_comment=False)
+    knowledge_count = await db.scalar(select(func.count()).select_from(KnowledgeChunk).where(KnowledgeChunk.site_id.in_(site_ids))) or 0
+    processed_count = await db.scalar(select(func.count()).select_from(Comment).where(Comment.site_id.in_(site_ids), Comment.processed_at.is_not(None))) or 0
+    return OnboardingStatus(
+        has_site=True,
+        has_knowledge=knowledge_count > 0,
+        has_connection=any(site.last_connected_at for site in sites),
+        has_processed_comment=processed_count > 0,
+    )
 
 
 @router.patch("/me", response_model=UserOut)

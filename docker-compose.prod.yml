@@ -50,6 +50,17 @@ services:
       redis:
         condition: service_healthy
 
+  beat:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   dashboard:
     build:
       context: ./dashboard

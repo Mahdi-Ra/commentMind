@@ -9,6 +9,7 @@ from app.models.site import Site
 from app.services.site_service import get_site_by_api_key
 from sqlalchemy import select
 from datetime import datetime, timezone
+from app.services.billing_service import downgrade_expired_plan
 
 bearer_scheme = HTTPBearer()
 
@@ -38,6 +39,8 @@ async def get_current_user(
         user.plan = "free"
         user.trial_plan = None
         user.trial_ends_at = None
+        user.trial_reminder_sent_at = None
+    downgrade_expired_plan(user)
     return user
 
 

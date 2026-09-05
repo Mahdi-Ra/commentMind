@@ -6,19 +6,15 @@ import Link from 'next/link'
 import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap, ShieldCheck, Mail } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { Logo } from '@/components/brand/logo'
-import { OnboardingModal } from '@/components/dashboard/onboarding-modal'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/button'
 import { authApi } from '@/lib/api'
 import { toast } from 'sonner'
 
-const ONBOARDING_KEY = 'cm_onboarding_done'
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, token, fetchMe, logout } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
-  const [showOnboarding, setShowOnboarding] = useState(false)
   const [resendingVerification, setResendingVerification] = useState(false)
 
   const resendVerification = async () => {
@@ -40,14 +36,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     fetchMe()
   }, [token, router, fetchMe])
-
-  // Show onboarding once per browser after first login
-  useEffect(() => {
-    if (user && !user.is_admin && !localStorage.getItem(ONBOARDING_KEY)) {
-      setShowOnboarding(true)
-      localStorage.setItem(ONBOARDING_KEY, '1')
-    }
-  }, [user])
 
   useEffect(() => {
     if (user?.is_admin && !pathname.startsWith('/dashboard/admin')) {
@@ -166,8 +154,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ) : children}
         </main>
       </div>
-
-      {!isAdmin && !needsVerification && <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} onAddSite={() => {}} hasSite={false} />}
     </div>
   )
 }

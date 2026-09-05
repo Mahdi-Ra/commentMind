@@ -5,6 +5,7 @@ Workers are started separately:
     celery -A app.worker.celery_app worker --loglevel=info
 """
 from celery import Celery
+from celery.schedules import crontab
 from app.core.config import settings
 
 celery_app = Celery(
@@ -30,5 +31,11 @@ celery_app.conf.update(
     # Route all tasks to the default queue
     task_routes={
         "app.worker.tasks.*": {"queue": "default"},
+    },
+    beat_schedule={
+        "account-lifecycle": {
+            "task": "app.worker.tasks.run_account_lifecycle",
+            "schedule": crontab(minute=0, hour="*/6"),
+        },
     },
 )

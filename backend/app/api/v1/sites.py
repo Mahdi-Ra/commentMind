@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime, timezone
+
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import hash_api_key
@@ -106,4 +108,6 @@ async def test_connection(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="API key does not match this site",
         )
+    site.last_connected_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    await db.flush()
     return WidgetPingOut(ok=True, site_name=site.name, message="API key is valid")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user, get_customer_user
@@ -12,6 +12,7 @@ from app.services.billing_service import (
     start_trial,
     submit_payment_tx,
 )
+from app.services.email_service import send_trial_started_email
 
 router = APIRouter(prefix="/billing", tags=["Billing"])
 
@@ -45,10 +46,12 @@ async def list_payments(
 @router.post("/trial", response_model=TrialOut, status_code=201)
 async def start_free_trial(
     payload: TrialCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_customer_user),
 ):
     user = await start_trial(db, current_user, payload)
+    background_tasks.add_task(send_trial_started_email, user.email, user.plan, user.trial_ends_at.date().isoformat())
     return TrialOut(
         plan=user.plan,
         trial_ends_at=user.trial_ends_at,

@@ -41,6 +41,8 @@ export const authApi = {
   verifyEmail: (token: string) => api.post('/auth/verify-email', { token }),
 
   resendVerification: () => api.post('/auth/resend-verification'),
+
+  onboarding: () => api.get('/auth/onboarding'),
 }
 
 // ─── Sites ───────────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { ComponentProps } from 'react'
 import Link from 'next/link'
-import { sitesApi, commentsApi } from '@/lib/api'
+import { authApi, sitesApi, commentsApi } from '@/lib/api'
 import { toast } from 'sonner'
 import {
   Globe,
@@ -14,6 +14,11 @@ import {
   ShieldAlert,
   TrendingUp,
   Download,
+  CheckCircle2,
+  Circle,
+  BookOpen,
+  Plug,
+  ArrowRight,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
@@ -54,6 +59,13 @@ interface Usage {
   sites_count: number
 }
 
+interface OnboardingStatus {
+  has_site: boolean
+  has_knowledge: boolean
+  has_connection: boolean
+  has_processed_comment: boolean
+}
+
 type Insights = ComponentProps<typeof InsightPanel>['insights']
 
 export default function DashboardPage() {
@@ -62,6 +74,7 @@ export default function DashboardPage() {
   const [statsMap, setStatsMap] = useState<Record<string, Stats>>({})
   const [usage, setUsage] = useState<Usage | null>(null)
   const [insights, setInsights] = useState<Insights | null>(null)
+  const [onboarding, setOnboarding] = useState<OnboardingStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAddSite, setShowAddSite] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -91,6 +104,7 @@ export default function DashboardPage() {
         }),
         commentsApi.usage().then((r) => setUsage(r.data)).catch(() => {}),
         commentsApi.insights().then((r) => setInsights(r.data)).catch(() => {}),
+        authApi.onboarding().then((r) => setOnboarding(r.data)).catch(() => {}),
       ])
     } catch {
       toast.error('Failed to load sites')
@@ -149,6 +163,14 @@ export default function DashboardPage() {
             trialDaysLeft={user.trial_days_left}
             usedComments={usage?.comments_this_month ?? 0}
             usedSites={usage?.sites_count ?? sites.length}
+          />
+        )}
+
+        {onboarding && (
+          <ActivationChecklist
+            status={onboarding}
+            firstSite={sites[0]}
+            onAddSite={() => setShowAddSite(true)}
           />
         )}
 
@@ -257,6 +279,78 @@ export default function DashboardPage() {
         </form>
       </Modal>
     </>
+  )
+}
+
+function ActivationChecklist({
+  status,
+  firstSite,
+  onAddSite,
+}: {
+  status: OnboardingStatus
+  firstSite?: Site
+  onAddSite: () => void
+}) {
+  const steps = [
+    {
+      title: 'Add a site',
+      description: 'Create the website you want CommentMind to moderate.',
+      complete: status.has_site,
+      action: !status.has_site ? <Button size="sm" onClick={onAddSite}>Add site <ArrowRight className="h-3.5 w-3.5" /></Button> : null,
+      icon: Globe,
+    },
+    {
+      title: 'Add your knowledge',
+      description: 'Give AI your FAQs, policies, or product information.',
+      complete: status.has_knowledge,
+      action: status.has_site && !status.has_knowledge && firstSite ? <Link href={`/dashboard/sites/${firstSite.id}?tab=knowledge`}><Button size="sm" variant="secondary">Add knowledge <BookOpen className="h-3.5 w-3.5" /></Button></Link> : null,
+      icon: BookOpen,
+    },
+    {
+      title: 'Connect your site',
+      description: 'Install the plugin or add the JavaScript widget, then test the key.',
+      complete: status.has_connection,
+      action: status.has_site && !status.has_connection && firstSite ? <Link href={`/dashboard/sites/${firstSite.id}?tab=integration`}><Button size="sm" variant="secondary">Open integration <Plug className="h-3.5 w-3.5" /></Button></Link> : null,
+      icon: Plug,
+    },
+    {
+      title: 'Process your first comment',
+      description: 'Leave a real test comment to confirm the AI workflow.',
+      complete: status.has_processed_comment,
+      action: null,
+      icon: MessageSquare,
+    },
+  ]
+  const completed = steps.filter((step) => step.complete).length
+
+  if (completed === steps.length) return null
+
+  return (
+    <section className="border-y border-violet-100 bg-violet-50/60 py-5 sm:border sm:rounded-lg sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">Activate CommentMind</h2>
+          <p className="mt-1 text-sm text-slate-600">{completed} of {steps.length} steps complete. Your first live workflow is close.</p>
+        </div>
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-violet-700">{Math.round((completed / steps.length) * 100)}%</span>
+      </div>
+      <div className="mt-5 grid gap-3 lg:grid-cols-4">
+        {steps.map((step, index) => {
+          const Icon = step.icon
+          return (
+            <div key={step.title} className="min-w-0 border-t border-violet-100 pt-3 lg:border-l lg:border-t-0 lg:pl-3 lg:first:border-l-0 lg:first:pl-0">
+              <div className="flex items-center gap-2">
+                {step.complete ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" /> : <Circle className="h-4 w-4 shrink-0 text-violet-400" />}
+                <span className="text-xs font-medium text-slate-400">0{index + 1}</span>
+              </div>
+              <div className="mt-2 flex items-center gap-2"><Icon className="h-4 w-4 text-violet-600" /><h3 className="text-sm font-semibold text-slate-900">{step.title}</h3></div>
+              <p className="mt-1 min-h-10 text-xs leading-5 text-slate-500">{step.description}</p>
+              <div className="mt-3">{step.complete ? <span className="text-xs font-semibold text-emerald-700">Complete</span> : step.action}</div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

@@ -13,6 +13,7 @@ from app.models.payment import PaymentIntent
 from app.models.user import User
 from app.schemas.billing import CheckoutCreate, PaymentSubmit, TrialCreate
 from app.services.audit_service import write_audit_log
+from app.services.email_service import send_plan_activated_email
 
 PLAN_PRICES_USD = {
     "starter": {"monthly": 9.0, "annual": 84.0},
@@ -23,6 +24,24 @@ PLAN_PRICES_USD = {
 
 def _utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def subscription_end_date(billing_cycle: str, current_end: datetime | None = None) -> datetime:
+    """Extend from an active subscription end date, otherwise from now."""
+    now = _utcnow_naive()
+    start = current_end if current_end and current_end > now else now
+    return start + timedelta(days=365 if billing_cycle == "annual" else 30)
+
+
+def downgrade_expired_plan(user: User) -> bool:
+    """Move an expired paid plan to Free. Returns whether a downgrade occurred."""
+    now = _utcnow_naive()
+    if user.plan != "free" and not user.trial_plan and user.plan_ends_at and user.plan_ends_at <= now:
+        user.plan = "free"
+        user.plan_ends_at = None
+        user.plan_reminder_sent_at = None
+        return True
+    return False
 
 
 def _checkout_address(currency: str) -> str:
@@ -88,6 +107,8 @@ async def start_trial(
     user.trial_plan = payload.plan
     user.trial_started_at = now
     user.trial_ends_at = now + timedelta(days=7)
+    user.plan_ends_at = None
+    user.trial_reminder_sent_at = None
     await write_audit_log(
         db,
         action="billing.trial_started",
@@ -175,6 +196,9 @@ async def confirm_payment(
     user.plan = payment.plan
     user.trial_plan = None
     user.trial_ends_at = None
+    user.trial_reminder_sent_at = None
+    user.plan_ends_at = subscription_end_date(payment.billing_cycle, user.plan_ends_at)
+    user.plan_reminder_sent_at = None
     await write_audit_log(
         db,
         action="billing.payment_confirmed",
@@ -183,4 +207,5 @@ async def confirm_payment(
         target_id=payment.id,
         metadata={"user_id": user.id, "plan": payment.plan},
     )
+    send_plan_activated_email(user.email, user.plan, user.plan_ends_at.date().isoformat())
     return payment

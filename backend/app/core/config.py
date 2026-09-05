@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     AUTH_PASSWORD_RESET_LIMIT_PER_HOUR: int = 3
     AUTH_VERIFICATION_RESEND_LIMIT_PER_HOUR: int = 3
 
+    # Account lifecycle
+    SUPPORT_EMAIL: str = "hello@commentmind.website"
+    TRIAL_REMINDER_DAYS: int = 2
+    PLAN_RENEWAL_REMINDER_DAYS: int = 7
+
     class Config:
         env_file = ".env"
 

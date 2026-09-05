@@ -45,6 +45,13 @@ class EmailVerificationConfirm(BaseModel):
     token: str
 
 
+class OnboardingStatus(BaseModel):
+    has_site: bool
+    has_knowledge: bool
+    has_connection: bool
+    has_processed_comment: bool
+
+
 class UserOut(BaseModel):
     id: str
     email: str
@@ -60,5 +67,6 @@ class UserOut(BaseModel):
     trial_plan: Optional[str] = None
     trial_ends_at: Optional[datetime] = None
     trial_days_left: Optional[int] = None
+    plan_ends_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

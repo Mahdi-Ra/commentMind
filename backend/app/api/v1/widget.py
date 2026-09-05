@@ -62,6 +62,7 @@ async def submit_comment(
 ):
     _validate_origin(request, site)
     await check_widget_rate_limit(site.id)
+    site.last_connected_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # Enforce monthly comment quota based on site owner's plan
     await enforce_comment_limit(db, site.id, site.owner.plan if site.owner else "free")

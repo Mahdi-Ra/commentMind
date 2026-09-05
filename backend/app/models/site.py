@@ -27,6 +27,7 @@ class Site(Base):
     approve_threshold: Mapped[float] = mapped_column(Float, default=0.90)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_connected_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

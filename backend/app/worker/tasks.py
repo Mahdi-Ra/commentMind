@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from celery import Task
 
@@ -45,6 +45,62 @@ def process_comment_async(self, comment_id: str, site_id: str) -> dict:
         dict with final status and ai_reply (for result inspection / webhooks)
     """
     return self.run_async(_run(self, comment_id, site_id))
+
+
+@celery_app.task(base=_AsyncTask, name="app.worker.tasks.run_account_lifecycle")
+def run_account_lifecycle() -> dict:
+    """Send lifecycle emails and downgrade expired subscriptions every six hours."""
+    return asyncio.run(_run_account_lifecycle())
+
+
+async def _run_account_lifecycle() -> dict:
+    from sqlalchemy import select
+    from app.core.config import settings
+    from app.core.database import AsyncSessionLocal
+    from app.models.user import User
+    from app.services.billing_service import downgrade_expired_plan
+    from app.services.email_service import (
+        send_plan_expired_email,
+        send_plan_renewal_reminder_email,
+        send_trial_ending_email,
+        send_welcome_email,
+    )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    trial_reminder_cutoff = now + timedelta(days=settings.TRIAL_REMINDER_DAYS)
+    plan_reminder_cutoff = now + timedelta(days=settings.PLAN_RENEWAL_REMINDER_DAYS)
+    sent = {"welcome": 0, "trial_reminder": 0, "plan_reminder": 0, "expired": 0}
+
+    async with AsyncSessionLocal() as db:
+        users = list((await db.execute(select(User).where(User.is_active.is_(True)))).scalars().all())
+        for user in users:
+            if user.is_verified and not user.welcome_email_sent_at and send_welcome_email(user.email):
+                user.welcome_email_sent_at = now
+                sent["welcome"] += 1
+
+            if user.trial_plan and user.trial_ends_at:
+                if user.trial_ends_at <= now:
+                    user.plan = "free"
+                    user.trial_plan = None
+                    user.trial_ends_at = None
+                    user.trial_reminder_sent_at = None
+                elif user.trial_ends_at <= trial_reminder_cutoff and not user.trial_reminder_sent_at:
+                    if send_trial_ending_email(user.email, user.trial_plan, user.trial_ends_at.date().isoformat()):
+                        user.trial_reminder_sent_at = now
+                        sent["trial_reminder"] += 1
+
+            if user.plan != "free" and not user.trial_plan and user.plan_ends_at:
+                if user.plan_ends_at <= now:
+                    if downgrade_expired_plan(user):
+                        send_plan_expired_email(user.email)
+                        sent["expired"] += 1
+                elif user.plan_ends_at <= plan_reminder_cutoff and not user.plan_reminder_sent_at:
+                    if send_plan_renewal_reminder_email(user.email, user.plan, user.plan_ends_at.date().isoformat()):
+                        user.plan_reminder_sent_at = now
+                        sent["plan_reminder"] += 1
+        await db.commit()
+    logger.info("Account lifecycle completed: %s", sent)
+    return sent
 
 
 async def _run(task, comment_id: str, site_id: str) -> dict:

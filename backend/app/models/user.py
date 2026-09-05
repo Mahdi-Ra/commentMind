@@ -18,6 +18,10 @@ class User(Base):
     trial_plan: Mapped[str] = mapped_column(String, nullable=True)
     trial_started_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     trial_ends_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    plan_ends_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    trial_reminder_sent_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    plan_reminder_sent_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    welcome_email_sent_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { sitesApi, knowledgeApi } from '@/lib/api'
 import { toast } from 'sonner'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import {
   Key,
   Settings2,
@@ -54,12 +54,18 @@ type TabId = 'settings' | 'knowledge' | 'search-console' | 'apikey' | 'integrati
 
 export default function SiteSettingsPage() {
   const { siteId } = useParams()
+  const searchParams = useSearchParams()
   const id = siteId as string
 
   const [site, setSite] = useState<Site | null>(null)
   const [knowledge, setKnowledge] = useState<KnowledgeChunk[]>([])
   const [newKB, setNewKB] = useState('')
-  const [tab, setTab] = useState<TabId>('settings')
+  const requestedTab = searchParams.get('tab')
+  const [tab, setTab] = useState<TabId>(
+    requestedTab === 'knowledge' || requestedTab === 'integration' || requestedTab === 'search-console' || requestedTab === 'apikey'
+      ? requestedTab
+      : 'settings',
+  )
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [apiKey, setApiKey] = useState<string | null>(null)

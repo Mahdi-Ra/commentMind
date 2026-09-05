@@ -14,6 +14,7 @@ interface User {
   trial_plan?: string
   trial_ends_at?: string
   trial_days_left?: number
+  plan_ends_at?: string
 }
 
 interface AuthStore {
