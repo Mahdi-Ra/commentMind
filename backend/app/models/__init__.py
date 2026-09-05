@@ -6,6 +6,7 @@ from app.models.payment import PaymentIntent
 from app.models.audit import AuditLog
 from app.models.search_console import SearchConsoleConnection, SearchConsoleQueryCache
 from app.models.shopify import ShopifyConnection
+from app.models.customer_feedback import CustomerFeedback
 from app.models.professional import (
     AiRun,
     CommentFeedback,
@@ -24,6 +25,7 @@ __all__ = [
     "SearchConsoleConnection",
     "SearchConsoleQueryCache",
     "ShopifyConnection",
+    "CustomerFeedback",
     "Organization",
     "OrganizationMember",
     "WebhookEndpoint",

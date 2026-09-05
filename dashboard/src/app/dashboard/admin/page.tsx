@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ShieldCheck, Users, Globe2, MessageSquare, CreditCard, Search, CheckCircle2 } from 'lucide-react'
+import { ShieldCheck, Users, Globe2, MessageSquare, CreditCard, Search, CheckCircle2, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { adminApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/cn'
 
-type Tab = 'users' | 'sites' | 'payments'
+type Tab = 'users' | 'sites' | 'payments' | 'feedback'
 
 interface Overview {
   total_users: number
@@ -58,10 +58,20 @@ interface AdminPayment {
   created_at: string
 }
 
+interface AdminFeedback {
+  id: string
+  user_email: string
+  user_name?: string
+  rating: number
+  message?: string
+  created_at: string
+}
+
 const tabs: { id: Tab; label: string }[] = [
   { id: 'users', label: 'Users' },
   { id: 'sites', label: 'Sites' },
   { id: 'payments', label: 'Payments' },
+  { id: 'feedback', label: 'Feedback' },
 ]
 
 export default function PlatformAdminPage() {
@@ -71,6 +81,7 @@ export default function PlatformAdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [sites, setSites] = useState<AdminSite[]>([])
   const [payments, setPayments] = useState<AdminPayment[]>([])
+  const [feedback, setFeedback] = useState<AdminFeedback[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
@@ -78,13 +89,14 @@ export default function PlatformAdminPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const [overviewRes, usersRes, sitesRes, paymentsRes] = await Promise.all([
-        adminApi.overview(), adminApi.users(), adminApi.sites(), adminApi.payments(),
+      const [overviewRes, usersRes, sitesRes, paymentsRes, feedbackRes] = await Promise.all([
+        adminApi.overview(), adminApi.users(), adminApi.sites(), adminApi.payments(), adminApi.feedback(),
       ])
       setOverview(overviewRes.data)
       setUsers(usersRes.data)
       setSites(sitesRes.data)
       setPayments(paymentsRes.data)
+      setFeedback(feedbackRes.data)
     } catch {
       toast.error('Could not load platform data')
     } finally {
@@ -156,7 +168,7 @@ export default function PlatformAdminPage() {
           {tab === 'users' && <label className="relative mb-2 block"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users" className="h-9 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-400" /></label>}
         </div>
 
-        {loading ? <Spinner label="Loading platform data…" /> : tab === 'users' ? <UsersTable users={filteredUsers} savingId={savingId} onUpdate={updateUser} /> : tab === 'sites' ? <SitesTable sites={sites} /> : <PaymentsTable payments={payments} savingId={savingId} onConfirm={confirmPayment} />}
+        {loading ? <Spinner label="Loading platform data…" /> : tab === 'users' ? <UsersTable users={filteredUsers} savingId={savingId} onUpdate={updateUser} /> : tab === 'sites' ? <SitesTable sites={sites} /> : tab === 'payments' ? <PaymentsTable payments={payments} savingId={savingId} onConfirm={confirmPayment} /> : <FeedbackTable feedback={feedback} />}
       </div>
     </>
   )
@@ -179,4 +191,9 @@ function SitesTable({ sites }: { sites: AdminSite[] }) {
 function PaymentsTable({ payments, savingId, onConfirm }: { payments: AdminPayment[]; savingId: string | null; onConfirm: (id: string) => void }) {
   if (!payments.length) return <EmptyState icon={CreditCard} title="No payments yet" description="Crypto checkout requests will appear here." />
   return <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white"><table className="w-full min-w-[750px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Plan</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Transaction</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Action</th></tr></thead><tbody className="divide-y divide-slate-100">{payments.map((payment) => <tr key={payment.id}><td className="px-4 py-3 text-slate-700">{payment.user_email}</td><td className="px-4 py-3 capitalize">{payment.plan}<span className="text-xs text-slate-400"> · {payment.billing_cycle}</span></td><td className="px-4 py-3 tabular-nums">{payment.amount} {payment.currency}</td><td className="max-w-[160px] truncate px-4 py-3 font-mono text-xs text-slate-500" title={payment.tx_hash}>{payment.tx_hash || 'Not submitted'}</td><td className="px-4 py-3"><Badge variant={payment.status === 'confirmed' ? 'success' : payment.status === 'submitted' ? 'warning' : 'neutral'}>{payment.status}</Badge></td><td className="px-4 py-3 text-right">{payment.status === 'submitted' ? <Button size="sm" loading={savingId === payment.id} onClick={() => onConfirm(payment.id)}><CheckCircle2 className="h-4 w-4" />Confirm</Button> : null}</td></tr>)}</tbody></table></div>
+}
+
+function FeedbackTable({ feedback }: { feedback: AdminFeedback[] }) {
+  if (!feedback.length) return <EmptyState icon={Star} title="No feedback yet" description="Customer feedback will appear here after users activate their first workflow." />
+  return <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white"><table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Rating</th><th className="px-4 py-3">Message</th><th className="px-4 py-3">Received</th></tr></thead><tbody className="divide-y divide-slate-100">{feedback.map((item) => <tr key={item.id}><td className="px-4 py-3"><p className="font-medium text-slate-900">{item.user_name || 'Unnamed user'}</p><p className="text-xs text-slate-500">{item.user_email}</p></td><td className="px-4 py-3"><span className="inline-flex items-center gap-1 font-medium text-amber-700"><Star className="h-4 w-4 fill-amber-400 text-amber-500" />{item.rating}/5</span></td><td className="max-w-md px-4 py-3 text-slate-600">{item.message || <span className="text-slate-400">No written feedback</span>}</td><td className="whitespace-nowrap px-4 py-3 text-slate-500">{new Date(item.created_at).toLocaleDateString()}</td></tr>)}</tbody></table></div>
 }

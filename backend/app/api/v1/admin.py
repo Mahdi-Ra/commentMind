@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import get_platform_admin, is_platform_admin
 from app.core.database import get_db
 from app.models.comment import Comment
+from app.models.customer_feedback import CustomerFeedback
 from app.models.payment import PaymentIntent
 from app.models.site import Site
 from app.models.user import User
@@ -17,6 +18,7 @@ from app.schemas.admin import (
     AdminUserOut,
     AdminUserUpdate,
 )
+from app.schemas.feedback import AdminFeedbackOut
 from app.services.audit_service import write_audit_log
 from app.services.billing_service import confirm_payment
 
@@ -173,6 +175,31 @@ async def list_all_payments(
             submitted_at=payment.submitted_at, confirmed_at=payment.confirmed_at,
         )
         for payment, email in rows
+    ]
+
+
+@router.get("/feedback", response_model=list[AdminFeedbackOut])
+async def list_customer_feedback(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_platform_admin),
+):
+    rows = (await db.execute(
+        select(CustomerFeedback, User.email, User.full_name)
+        .join(User, User.id == CustomerFeedback.user_id)
+        .order_by(CustomerFeedback.created_at.desc())
+        .limit(300)
+    )).all()
+    return [
+        AdminFeedbackOut(
+            id=feedback.id,
+            user_id=feedback.user_id,
+            user_email=email,
+            user_name=name,
+            rating=feedback.rating,
+            message=feedback.message,
+            created_at=feedback.created_at,
+        )
+        for feedback, email, name in rows
     ]
 
 

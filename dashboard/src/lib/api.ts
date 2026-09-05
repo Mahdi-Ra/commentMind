@@ -113,6 +113,11 @@ export const billingApi = {
     api.post('/billing/trial', { plan }),
 }
 
+// ─── Customer feedback ──────────────────────────────────────────────────────
+export const feedbackApi = {
+  create: (data: { rating: number; message?: string }) => api.post('/feedback', data),
+}
+
 // ─── Platform admin ─────────────────────────────────────────────────────────
 export const adminApi = {
   overview: () => api.get('/admin/overview'),
@@ -122,6 +127,7 @@ export const adminApi = {
   sites: () => api.get('/admin/sites'),
   payments: () => api.get('/admin/payments'),
   confirmPayment: (paymentId: string) => api.post(`/admin/payments/${paymentId}/confirm`),
+  feedback: () => api.get('/admin/feedback'),
 }
 
 // ─── Knowledge Base ──────────────────────────────────────────────────────────

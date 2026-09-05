@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap, ShieldCheck, Mail } from 'lucide-react'
+import { LayoutDashboard, LogOut, ChevronDown, UserCircle, Zap, ShieldCheck, Mail, LifeBuoy } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { Logo } from '@/components/brand/logo'
 import { cn } from '@/lib/cn'
@@ -119,6 +119,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
+          <a
+            href="mailto:hello@commentmind.website?subject=CommentMind%20support"
+            className="inline-flex h-8 w-full items-center justify-start gap-1.5 rounded-lg px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          >
+            <LifeBuoy className="h-4 w-4" />
+            Contact support
+          </a>
           <Button
             variant="ghost"
             size="sm"
@@ -200,6 +207,13 @@ function MobileUserMenu({ email, isAdmin, onLogout }: { email?: string; isAdmin:
           {isAdmin ? <ShieldCheck className="h-4 w-4" /> : <UserCircle className="h-4 w-4" />}
           {isAdmin ? 'Platform admin' : 'Account'}
         </Link>
+        <a
+          href="mailto:hello@commentmind.website?subject=CommentMind%20support"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        >
+          <LifeBuoy className="h-4 w-4" />
+          Contact support
+        </a>
         <button
           type="button"
           onClick={onLogout}

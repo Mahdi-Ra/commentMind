@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { ComponentProps } from 'react'
 import Link from 'next/link'
-import { authApi, sitesApi, commentsApi } from '@/lib/api'
+import { authApi, sitesApi, commentsApi, feedbackApi } from '@/lib/api'
 import { toast } from 'sonner'
 import {
   Globe,
@@ -19,6 +19,8 @@ import {
   BookOpen,
   Plug,
   ArrowRight,
+  LifeBuoy,
+  Star,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
@@ -78,6 +80,10 @@ export default function DashboardPage() {
   const [onboarding, setOnboarding] = useState<OnboardingStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAddSite, setShowAddSite] = useState(false)
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [feedbackMessage, setFeedbackMessage] = useState('')
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbackSent, setFeedbackSent] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newSite, setNewSite] = useState({
     name: '',
@@ -142,6 +148,24 @@ export default function DashboardPage() {
   }
 
   const firstName = user?.full_name?.split(' ')[0] || 'there'
+
+  const submitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!feedbackRating) {
+      toast.error('Choose a rating first')
+      return
+    }
+    setFeedbackSubmitting(true)
+    try {
+      await feedbackApi.create({ rating: feedbackRating, message: feedbackMessage.trim() || undefined })
+      setFeedbackSent(true)
+      toast.success('Thanks - your feedback has been sent.')
+    } catch {
+      toast.error('Could not send feedback. Please try again.')
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
 
   return (
     <>
@@ -211,6 +235,18 @@ export default function DashboardPage() {
         </section>
 
         {!loading && insights && <InsightPanel insights={insights} />}
+
+        {!loading && onboarding?.has_processed_comment && (
+          <CustomerSupport
+            rating={feedbackRating}
+            message={feedbackMessage}
+            submitting={feedbackSubmitting}
+            sent={feedbackSent}
+            onRating={setFeedbackRating}
+            onMessage={setFeedbackMessage}
+            onSubmit={submitFeedback}
+          />
+        )}
       </div>
 
       <Modal
@@ -282,6 +318,40 @@ export default function DashboardPage() {
         </form>
       </Modal>
     </>
+  )
+}
+
+function CustomerSupport({ rating, message, submitting, sent, onRating, onMessage, onSubmit }: {
+  rating: number
+  message: string
+  submitting: boolean
+  sent: boolean
+  onRating: (rating: number) => void
+  onMessage: (message: string) => void
+  onSubmit: (e: React.FormEvent) => void
+}) {
+  return (
+    <Card className="border-slate-200">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:items-start">
+        <div>
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-700"><LifeBuoy className="h-4 w-4" /></span>
+          <h2 className="mt-3 text-base font-semibold text-slate-900">Need a hand?</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">Tell us what is getting in the way, and we will help you get the most from CommentMind.</p>
+          <a href="mailto:hello@commentmind.website?subject=CommentMind%20support" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-violet-700 hover:text-violet-800"><LifeBuoy className="h-4 w-4" />Contact support <ArrowRight className="h-3.5 w-3.5" /></a>
+        </div>
+        {sent ? <div className="rounded-lg bg-emerald-50 p-5"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><h3 className="mt-2 text-sm font-semibold text-emerald-900">Feedback received</h3><p className="mt-1 text-sm text-emerald-800">Thank you for helping shape CommentMind.</p></div> : <form onSubmit={onSubmit}>
+          <fieldset>
+            <legend className="text-sm font-semibold text-slate-900">How is CommentMind working for you?</legend>
+            <div className="mt-3 flex gap-1">
+              {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" onClick={() => onRating(value)} title={`${value} out of 5`} aria-label={`${value} out of 5`} className="flex h-9 w-9 items-center justify-center rounded-md text-slate-300 transition hover:bg-amber-50 hover:text-amber-400"><Star className={cn('h-5 w-5', value <= rating && 'fill-amber-400 text-amber-500')} /></button>)}
+            </div>
+          </fieldset>
+          <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="feedback-message">Anything we should know?</label>
+          <textarea id="feedback-message" value={message} onChange={(event) => onMessage(event.target.value)} maxLength={1000} rows={3} placeholder="Optional feedback" className="mt-2 block w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+          <Button type="submit" size="sm" className="mt-3" loading={submitting}>Send feedback</Button>
+        </form>}
+      </div>
+    </Card>
   )
 }
 
