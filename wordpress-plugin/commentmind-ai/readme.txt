@@ -4,7 +4,7 @@ Tags: comments, comment moderation, spam filter, ai replies, customer support
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,9 @@ The plugin removes its local settings. Existing WordPress comments are not delet
 
 == Changelog ==
 
+= 1.1.4 =
+* Reliably moves high-confidence AI-detected spam into WordPress Spam using the native WordPress comment API.
+
 = 1.1.3 =
 * Fixed the admin layout direction so English WordPress dashboards remain LTR while RTL WordPress locales remain RTL.
 
@@ -84,6 +87,9 @@ The plugin removes its local settings. Existing WordPress comments are not delet
 * Fixed the admin settings menu for new installations.
 
 == Upgrade Notice ==
+
+= 1.1.4 =
+Ensures comments identified as spam by CommentMind are also moved into the WordPress Spam queue.
 
 = 1.1.2 =
 Improves WordPress.org compatibility, service disclosure, and concurrent comment handling.

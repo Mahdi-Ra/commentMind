@@ -6,6 +6,7 @@ class CMMIND_Moderator {
     private CMMIND_Settings $settings;
     private CMMIND_API      $api;
     private array $pending_replies = [];
+    private array $pending_spam = [];
 
     public function __construct(CMMIND_Settings $settings) {
         $this->settings = $settings;
@@ -39,11 +40,10 @@ class CMMIND_Moderator {
 
         $status     = $result['status']    ?? 'approved';
         $ai_reply   = $result['ai_reply']  ?? null;
-        $spam_score = $result['spam_score'] ?? 0;
-
-        // Mark as spam
+        // WordPress calculates its own status after this filter runs. Keep the
+        // decision until comment_post, then use WordPress' spam API directly.
         if ($status === 'spam' && $this->settings->get('auto_spam')) {
-            $commentdata['comment_approved'] = 'spam';
+            $this->pending_spam[$this->comment_fingerprint($commentdata)] = true;
             return $commentdata;
         }
 
@@ -65,16 +65,24 @@ class CMMIND_Moderator {
      * Post the AI reply as a child comment.
      */
     public function post_ai_reply(int $comment_id, $comment_approved): void {
-        if (! $this->settings->get('auto_reply')) {
-            return;
-        }
-
         $comment = get_comment($comment_id);
         if (! $comment) {
             return;
         }
 
         $fingerprint = $this->comment_fingerprint((array) $comment);
+        $is_spam = $this->pending_spam[$fingerprint] ?? false;
+        unset($this->pending_spam[$fingerprint]);
+
+        if ($is_spam) {
+            wp_spam_comment($comment_id);
+            return;
+        }
+
+        if (! $this->settings->get('auto_reply')) {
+            return;
+        }
+
         $ai_reply = $this->pending_replies[$fingerprint] ?? null;
         unset($this->pending_replies[$fingerprint]);
 
