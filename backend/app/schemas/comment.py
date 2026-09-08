@@ -25,6 +25,8 @@ class CommentResult(BaseModel):
     spam_score: float
     intent: Optional[str] = None
     sentiment: Optional[str] = None
+    moderation_confidence: Optional[float] = None
+    moderation_reason: Optional[str] = None
 
 
 class CommentOut(BaseModel):
@@ -39,6 +41,9 @@ class CommentOut(BaseModel):
     status: str
     intent: Optional[str]
     spam_score: Optional[float]
+    moderation_confidence: Optional[float]
+    moderation_reason: Optional[str]
+    decision_source: str
     sentiment: Optional[str]
     ai_reply: Optional[str]
     reply_sent: bool

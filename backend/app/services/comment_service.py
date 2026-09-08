@@ -69,6 +69,10 @@ async def process_comment(
 
     # 3. Determine status
     status, spam_score = determine_comment_status(site, analysis)
+    moderation_confidence = spam_score if status == "spam" else max(
+        0.0,
+        min(1.0, float(analysis.get("approval_confidence", 1 - spam_score))),
+    )
 
     # Database columns use TIMESTAMP WITHOUT TIME ZONE; store UTC consistently.
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -79,6 +83,9 @@ async def process_comment(
         comment.status = status
         comment.intent = analysis.get("intent")
         comment.spam_score = spam_score
+        comment.moderation_confidence = moderation_confidence
+        comment.moderation_reason = analysis.get("moderation_reason")
+        comment.decision_source = "ai"
         comment.sentiment = analysis.get("sentiment")
         comment.ai_reply = analysis.get("reply")
         comment.product_sku = payload.product_sku
@@ -105,6 +112,9 @@ async def process_comment(
             status=status,
             intent=analysis.get("intent"),
             spam_score=spam_score,
+            moderation_confidence=moderation_confidence,
+            moderation_reason=analysis.get("moderation_reason"),
+            decision_source="ai",
             sentiment=analysis.get("sentiment"),
             ai_reply=analysis.get("reply"),
             reply_sent=status == "replied",
@@ -123,6 +133,8 @@ async def process_comment(
         spam_score=spam_score,
         intent=analysis.get("intent"),
         sentiment=analysis.get("sentiment"),
+        moderation_confidence=moderation_confidence,
+        moderation_reason=analysis.get("moderation_reason"),
     )
 
 

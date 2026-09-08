@@ -56,6 +56,7 @@ Return exactly this JSON shape with no extra text:
 {{
   "spam_score": <number between 0 and 1 indicating spam probability>,
   "approval_confidence": <number between 0 and 1 indicating confidence the comment is safe to publish>,
+  "moderation_reason": <one concise sentence explaining the spam or safety decision>,
   "intent": <"question"|"complaint"|"praise"|"spam"|"other">,
   "sentiment": <"positive"|"negative"|"neutral">,
   "should_reply": <true|false>,
@@ -83,6 +84,7 @@ Return exactly this JSON shape with no extra text:
     # Ensure defaults
     result.setdefault("spam_score", 0.1)
     result.setdefault("approval_confidence", max(0.0, 1 - float(result["spam_score"])))
+    result.setdefault("moderation_reason", "The comment was evaluated against this page's content and moderation policy.")
     result.setdefault("intent", "other")
     result.setdefault("sentiment", "neutral")
     result.setdefault("should_reply", True)
@@ -107,9 +109,10 @@ def _build_system_prompt(
 ## Your tasks
 1. Estimate whether the comment is spam (spam_score).
 2. Estimate confidence the comment is legitimate and safe to publish (approval_confidence).
-3. Detect the writer's intent (intent).
-4. Detect comment sentiment (sentiment).
-5. Write an appropriate reply when needed.
+3. Give a concise moderation reason that refers only to observable comment or page context.
+4. Detect the writer's intent (intent).
+5. Detect comment sentiment (sentiment).
+6. Write an appropriate reply when needed.
 
 ## Reply tone: {tone_desc}
 ## Reply language: {lang_desc}

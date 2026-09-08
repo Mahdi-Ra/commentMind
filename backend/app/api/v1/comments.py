@@ -56,6 +56,7 @@ class InsightSummary(BaseModel):
 async def list_comments(
     site_id: str,
     status: str | None = Query(None),
+    risk: str | None = Query(None, pattern="^(high)$"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -66,6 +67,8 @@ async def list_comments(
     query = select(Comment).where(Comment.site_id == site_id).order_by(desc(Comment.created_at))
     if status:
         query = query.where(Comment.status == status)
+    if risk == "high":
+        query = query.where(Comment.status == "spam", Comment.spam_score >= 0.85)
     query = query.offset((page - 1) * limit).limit(limit)
 
     result = await db.execute(query)
@@ -168,6 +171,7 @@ async def moderate_comment(
         comment.reply_sent = False
         comment.reply_sent_at = None
 
+    comment.decision_source = "manual"
     comment.processed_at = now
     await write_audit_log(
         db,

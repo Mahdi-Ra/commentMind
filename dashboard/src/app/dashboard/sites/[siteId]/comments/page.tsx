@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { commentsApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { useParams } from 'next/navigation'
-import { MessageSquare, Bot, CheckCircle2, ShieldAlert, Send } from 'lucide-react'
+import { MessageSquare, Bot, CheckCircle2, ShieldAlert, Send, ShieldCheck, ThumbsDown, ThumbsUp, Gauge } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,9 @@ interface Comment {
   status: string
   intent?: string
   spam_score?: number
+  moderation_confidence?: number
+  moderation_reason?: string
+  decision_source: 'ai' | 'manual'
   sentiment?: string
   ai_reply?: string
   reply_sent: boolean
@@ -42,14 +45,15 @@ interface Stats {
   today: number
 }
 
-const FILTERS = [
-  { value: '', label: 'All' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'replied', label: 'Replied' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'spam', label: 'Spam' },
-  { value: 'uncertain', label: 'Review' },
-] as const
+const FILTERS: { id: string; status: string; risk?: 'high'; label: string }[] = [
+  { id: 'all', status: '', label: 'All' },
+  { id: 'approved', status: 'approved', label: 'Approved' },
+  { id: 'replied', status: 'replied', label: 'Replied' },
+  { id: 'pending', status: 'pending', label: 'Pending' },
+  { id: 'review', status: 'uncertain', label: 'Needs review' },
+  { id: 'spam', status: 'spam', label: 'Spam' },
+  { id: 'high-risk', status: '', risk: 'high', label: 'High-risk spam' },
+]
 
 export default function CommentsPage() {
   const { siteId } = useParams()
@@ -57,6 +61,7 @@ export default function CommentsPage() {
 
   const [comments, setComments] = useState<Comment[]>([])
   const [status, setStatus] = useState('')
+  const [risk, setRisk] = useState<'high' | undefined>()
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
@@ -64,13 +69,14 @@ export default function CommentsPage() {
   useEffect(() => {
     load()
     loadStats()
-  }, [id, status, page])
+  }, [id, status, risk, page])
 
   const load = async () => {
     setLoading(true)
     try {
       const res = await commentsApi.list(id, {
         status: status || undefined,
+        risk,
         page,
         limit: 20,
       })
@@ -99,6 +105,15 @@ export default function CommentsPage() {
       toast.success('Comment updated')
     } catch {
       toast.error('Could not update comment')
+    }
+  }
+
+  const handleFeedback = async (commentId: string, rating: number, correctedStatus?: string) => {
+    try {
+      await commentsApi.feedback(id, commentId, { rating, corrected_status: correctedStatus })
+      toast.success('Feedback recorded')
+    } catch {
+      toast.error('Could not record feedback')
     }
   }
 
@@ -132,15 +147,16 @@ export default function CommentsPage() {
         <div className="mb-6 flex flex-wrap gap-2">
           {FILTERS.map((f) => (
             <button
-              key={f.value}
+              key={f.id}
               type="button"
               onClick={() => {
-                setStatus(f.value)
+                setStatus(f.status)
+                setRisk(f.risk)
                 setPage(1)
               }}
               className={cn(
                 'rounded-lg px-3.5 py-2 text-sm font-medium transition',
-                status === f.value
+                status === f.status && risk === f.risk
                   ? 'bg-violet-600 text-white shadow-sm'
                   : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50',
               )}
@@ -166,7 +182,7 @@ export default function CommentsPage() {
           <ul className="space-y-3">
             {comments.map((c) => (
               <li key={c.id}>
-                <CommentCard comment={c} onModerate={handleModerate} />
+                <CommentCard comment={c} onModerate={handleModerate} onFeedback={handleFeedback} />
               </li>
             ))}
           </ul>
@@ -201,12 +217,20 @@ export default function CommentsPage() {
 function CommentCard({
   comment: c,
   onModerate,
+  onFeedback,
 }: {
   comment: Comment
   onModerate: (commentId: string, action: string, ai_reply?: string) => void
+  onFeedback: (commentId: string, rating: number, correctedStatus?: string) => void
 }) {
   const statusVariant = STATUS_VARIANTS[c.status] || 'neutral'
   const [reply, setReply] = useState(c.ai_reply || '')
+  const [feedbackSent, setFeedbackSent] = useState(false)
+  const confidence = c.moderation_confidence ?? (c.status === 'spam' ? c.spam_score : undefined)
+  const feedback = (rating: number, correctedStatus?: string) => {
+    onFeedback(c.id, rating, correctedStatus)
+    setFeedbackSent(true)
+  }
 
   return (
     <Card padding className="!p-5">
@@ -225,6 +249,14 @@ function CommentCard({
             )}
           </div>
           <p className="text-sm leading-relaxed text-slate-800">{c.content}</p>
+          <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:items-start">
+            <span className={cn('inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold', c.decision_source === 'manual' ? 'bg-slate-200 text-slate-700' : 'bg-violet-100 text-violet-700')}>
+              {c.decision_source === 'manual' ? <ShieldCheck className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+              {c.decision_source === 'manual' ? 'Manual decision' : 'AI decision'}
+            </span>
+            {confidence !== undefined && confidence !== null && <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600"><Gauge className="h-3.5 w-3.5 text-slate-400" />{Math.round(confidence * 100)}% confidence</span>}
+            <p className="min-w-0 text-xs leading-5 text-slate-600"><span className="font-semibold text-slate-700">Why: </span>{c.moderation_reason || 'This comment was evaluated against your moderation settings and page context.'}</p>
+          </div>
           {c.ai_reply && (
             <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50/80 p-4">
               <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-violet-700">
@@ -234,9 +266,9 @@ function CommentCard({
               <p className="text-sm text-violet-950">{c.ai_reply}</p>
             </div>
           )}
-          {(c.status === 'pending' || c.status === 'uncertain') && (
+          {c.status !== 'spam' && (
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <label className="text-xs font-semibold text-slate-500">Reply before approving</label>
+              <label className="text-xs font-semibold text-slate-500">Edit reply before publishing</label>
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
@@ -246,6 +278,10 @@ function CommentCard({
               />
             </div>
           )}
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <span className="text-xs text-slate-500">Was the AI decision accurate?</span>
+            {feedbackSent ? <span className="text-xs font-medium text-emerald-700">Feedback saved</span> : <><button type="button" onClick={() => feedback(5)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700" title="Mark the AI decision as accurate"><ThumbsUp className="h-3.5 w-3.5" />Accurate</button><button type="button" onClick={() => feedback(1, c.status)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-700" title="Mark the AI decision as needing correction"><ThumbsDown className="h-3.5 w-3.5" />Needs correction</button></>}
+          </div>
         </div>
         <aside className="shrink-0 text-right sm:pl-4">
           <p className="text-sm font-medium text-slate-700">{c.author_name || 'Anonymous'}</p>
@@ -258,24 +294,24 @@ function CommentCard({
             </p>
           )}
           <div className="mt-4 flex flex-col gap-2">
-            <Button
+            {c.status !== 'approved' && c.status !== 'replied' && <Button
               variant="secondary"
               size="sm"
               onClick={() => onModerate(c.id, 'approve')}
             >
               <CheckCircle2 className="h-4 w-4" />
               Approve
-            </Button>
-            <Button
+            </Button>}
+            {c.status !== 'spam' && <Button
               variant="outline"
               size="sm"
               onClick={() => onModerate(c.id, 'reply', reply)}
               disabled={!reply.trim()}
             >
               <Send className="h-4 w-4" />
-              Reply
-            </Button>
-            <Button
+              Publish reply
+            </Button>}
+            {c.status !== 'spam' && <Button
               variant="ghost"
               size="sm"
               className="text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -283,7 +319,7 @@ function CommentCard({
             >
               <ShieldAlert className="h-4 w-4" />
               Spam
-            </Button>
+            </Button>}
           </div>
         </aside>
       </div>

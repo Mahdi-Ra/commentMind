@@ -150,11 +150,18 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
 
             # Determine final status
             status, spam_score = determine_comment_status(site, analysis)
+            moderation_confidence = spam_score if status == "spam" else max(
+                0.0,
+                min(1.0, float(analysis.get("approval_confidence", 1 - spam_score))),
+            )
 
             # Update comment in DB
             comment.status = status
             comment.intent = analysis.get("intent")
             comment.spam_score = spam_score
+            comment.moderation_confidence = moderation_confidence
+            comment.moderation_reason = analysis.get("moderation_reason")
+            comment.decision_source = "ai"
             comment.sentiment = analysis.get("sentiment")
             comment.ai_reply = analysis.get("reply")
             comment.reply_sent = status == "replied"
@@ -176,6 +183,7 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
                 "status": status,
                 "ai_reply": analysis.get("reply"),
                 "spam_score": spam_score,
+                "moderation_confidence": moderation_confidence,
             }
 
         except Exception as exc:

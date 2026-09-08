@@ -26,6 +26,9 @@ class Comment(Base):
     status: Mapped[str] = mapped_column(String, default="pending")  # pending, approved, spam, replied, uncertain
     intent: Mapped[str] = mapped_column(String, nullable=True)  # question, complaint, praise, spam, other
     spam_score: Mapped[float] = mapped_column(Float, nullable=True)
+    moderation_confidence: Mapped[float] = mapped_column(Float, nullable=True)
+    moderation_reason: Mapped[str] = mapped_column(Text, nullable=True)
+    decision_source: Mapped[str] = mapped_column(String, default="ai", nullable=False)  # ai, manual
     sentiment: Mapped[str] = mapped_column(String, nullable=True)  # positive, negative, neutral
     
     # AI Reply

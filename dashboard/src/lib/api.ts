@@ -76,7 +76,7 @@ export const sitesApi = {
 
 // ─── Comments ────────────────────────────────────────────────────────────────
 export const commentsApi = {
-  list: (siteId: string, params?: { status?: string; page?: number; limit?: number }) =>
+  list: (siteId: string, params?: { status?: string; risk?: 'high'; page?: number; limit?: number }) =>
     api.get(`/sites/${siteId}/comments`, { params }),
 
   stats: (siteId: string) =>
@@ -84,6 +84,9 @@ export const commentsApi = {
 
   moderate: (siteId: string, commentId: string, data: { action: string; ai_reply?: string }) =>
     api.patch(`/sites/${siteId}/comments/${commentId}`, data),
+
+  feedback: (siteId: string, commentId: string, data: { rating: number; corrected_status?: string; corrected_reply?: string; note?: string }) =>
+    api.post(`/sites/${siteId}/comments/${commentId}/feedback`, data),
 
   usage: () =>
     api.get('/usage'),
