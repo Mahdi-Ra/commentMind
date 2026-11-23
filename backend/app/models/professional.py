@@ -46,6 +46,7 @@ class CommentFeedback(Base):
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     corrected_status: Mapped[str] = mapped_column(String, nullable=True)
+    corrected_intent: Mapped[str] = mapped_column(String, nullable=True)
     corrected_reply: Mapped[str] = mapped_column(Text, nullable=True)
     note: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())

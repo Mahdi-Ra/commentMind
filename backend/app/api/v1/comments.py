@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func, and_
 from app.core.database import get_db
@@ -25,8 +25,16 @@ class UsageSummary(BaseModel):
 
 
 class CommentFeedbackIn(BaseModel):
-    rating: int
+    rating: int = Field(ge=1, le=5)
     corrected_status: str | None = None
+    corrected_intent: str | None = Field(
+        None,
+        pattern=(
+            "^(purchase_intent|product_inquiry|pricing_inquiry|shipping_inquiry|"
+            "order_issue|complaint|technical_question|contact_request|positive_feedback|"
+            "negative_feedback|general_question|spam|other)$"
+        ),
+    )
     corrected_reply: str | None = None
     note: str | None = None
 
@@ -57,6 +65,7 @@ async def list_comments(
     site_id: str,
     status: str | None = Query(None),
     risk: str | None = Query(None, pattern="^(high)$"),
+    intent: str | None = Query(None, max_length=64),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -69,6 +78,8 @@ async def list_comments(
         query = query.where(Comment.status == status)
     if risk == "high":
         query = query.where(Comment.status == "spam", Comment.spam_score >= 0.85)
+    if intent:
+        query = query.where(Comment.intent == intent)
     query = query.offset((page - 1) * limit).limit(limit)
 
     result = await db.execute(query)
@@ -208,6 +219,7 @@ async def add_comment_feedback(
         user_id=current_user.id,
         rating=payload.rating,
         corrected_status=payload.corrected_status,
+        corrected_intent=payload.corrected_intent,
         corrected_reply=payload.corrected_reply,
         note=payload.note,
     )
@@ -219,7 +231,7 @@ async def add_comment_feedback(
         site_id=site_id,
         target_type="comment",
         target_id=comment_id,
-        metadata={"rating": payload.rating},
+        metadata={"rating": payload.rating, "corrected_intent": payload.corrected_intent},
     )
     return {"ok": True}
 

@@ -158,11 +158,16 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
             # Update comment in DB
             comment.status = status
             comment.intent = analysis.get("intent")
+            comment.intent_confidence = analysis.get("intent_confidence")
+            comment.intent_reason = analysis.get("intent_reason")
             comment.spam_score = spam_score
             comment.moderation_confidence = moderation_confidence
             comment.moderation_reason = analysis.get("moderation_reason")
             comment.decision_source = "ai"
             comment.sentiment = analysis.get("sentiment")
+            comment.sentiment_score = analysis.get("sentiment_score")
+            comment.urgency = analysis.get("urgency")
+            comment.detected_entities = analysis.get("detected_entities")
             comment.ai_reply = analysis.get("reply")
             comment.reply_sent = status == "replied"
             now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -184,6 +189,8 @@ async def _run(task, comment_id: str, site_id: str) -> dict:
                 "ai_reply": analysis.get("reply"),
                 "spam_score": spam_score,
                 "moderation_confidence": moderation_confidence,
+                "intent": analysis.get("intent"),
+                "intent_confidence": analysis.get("intent_confidence"),
             }
 
         except Exception as exc:

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { commentsApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { useParams } from 'next/navigation'
-import { MessageSquare, Bot, CheckCircle2, ShieldAlert, Send, ShieldCheck, ThumbsDown, ThumbsUp, Gauge } from 'lucide-react'
+import { MessageSquare, Bot, CheckCircle2, ShieldAlert, Send, ShieldCheck, ThumbsDown, ThumbsUp, Gauge, Tags } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,8 @@ import {
   STATUS_LABELS,
   STATUS_VARIANTS,
   INTENT_LABELS,
+  INTENT_OPTIONS,
+  URGENCY_LABELS,
 } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 
@@ -26,11 +28,16 @@ interface Comment {
   post_title?: string
   status: string
   intent?: string
+  intent_confidence?: number
+  intent_reason?: string
   spam_score?: number
   moderation_confidence?: number
   moderation_reason?: string
   decision_source: 'ai' | 'manual'
   sentiment?: string
+  sentiment_score?: number
+  urgency?: string
+  detected_entities?: { type: string; value: string }[]
   ai_reply?: string
   reply_sent: boolean
   created_at: string
@@ -62,6 +69,7 @@ export default function CommentsPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [status, setStatus] = useState('')
   const [risk, setRisk] = useState<'high' | undefined>()
+  const [intent, setIntent] = useState('')
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
@@ -69,7 +77,7 @@ export default function CommentsPage() {
   useEffect(() => {
     load()
     loadStats()
-  }, [id, status, risk, page])
+  }, [id, status, risk, intent, page])
 
   const load = async () => {
     setLoading(true)
@@ -77,6 +85,7 @@ export default function CommentsPage() {
       const res = await commentsApi.list(id, {
         status: status || undefined,
         risk,
+        intent: intent || undefined,
         page,
         limit: 20,
       })
@@ -108,12 +117,14 @@ export default function CommentsPage() {
     }
   }
 
-  const handleFeedback = async (commentId: string, rating: number, correctedStatus?: string) => {
+  const handleFeedback = async (commentId: string, rating: number, correctedIntent?: string): Promise<boolean> => {
     try {
-      await commentsApi.feedback(id, commentId, { rating, corrected_status: correctedStatus })
+      await commentsApi.feedback(id, commentId, { rating, corrected_intent: correctedIntent })
       toast.success('Feedback recorded')
+      return true
     } catch {
       toast.error('Could not record feedback')
+      return false
     }
   }
 
@@ -144,7 +155,7 @@ export default function CommentsPage() {
           </div>
         )}
 
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap items-center gap-2">
           {FILTERS.map((f) => (
             <button
               key={f.id}
@@ -164,6 +175,18 @@ export default function CommentsPage() {
               {f.label}
             </button>
           ))}
+          <label className="ml-auto flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600">
+            <Tags className="h-4 w-4 text-slate-400" />
+            <span className="sr-only">Filter by intent</span>
+            <select
+              value={intent}
+              onChange={(event) => { setIntent(event.target.value); setPage(1) }}
+              className="min-w-32 bg-transparent text-sm outline-none"
+            >
+              <option value="">All intents</option>
+              {INTENT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
         </div>
 
         {loading ? (
@@ -221,15 +244,17 @@ function CommentCard({
 }: {
   comment: Comment
   onModerate: (commentId: string, action: string, ai_reply?: string) => void
-  onFeedback: (commentId: string, rating: number, correctedStatus?: string) => void
+  onFeedback: (commentId: string, rating: number, correctedIntent?: string) => Promise<boolean>
 }) {
   const statusVariant = STATUS_VARIANTS[c.status] || 'neutral'
   const [reply, setReply] = useState(c.ai_reply || '')
   const [feedbackSent, setFeedbackSent] = useState(false)
+  const [correctedIntent, setCorrectedIntent] = useState('')
   const confidence = c.moderation_confidence ?? (c.status === 'spam' ? c.spam_score : undefined)
-  const feedback = (rating: number, correctedStatus?: string) => {
-    onFeedback(c.id, rating, correctedStatus)
-    setFeedbackSent(true)
+  const feedback = async (rating: number, correctedIntentValue?: string) => {
+    if (await onFeedback(c.id, rating, correctedIntentValue)) {
+      setFeedbackSent(true)
+    }
   }
 
   return (
@@ -241,6 +266,7 @@ function CommentCard({
             {c.intent && (
               <Badge variant="neutral">{INTENT_LABELS[c.intent] || c.intent}</Badge>
             )}
+            {c.urgency && c.urgency !== 'normal' && <Badge variant={c.urgency === 'high' ? 'warning' : 'neutral'}>{URGENCY_LABELS[c.urgency] || c.urgency}</Badge>}
             {c.sentiment && <Badge variant="neutral">{c.sentiment}</Badge>}
             {c.spam_score !== undefined && c.spam_score !== null && (
               <span className="text-xs text-slate-400">
@@ -249,6 +275,11 @@ function CommentCard({
             )}
           </div>
           <p className="text-sm leading-relaxed text-slate-800">{c.content}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+            {c.intent_confidence !== undefined && c.intent_confidence !== null && <span><span className="font-semibold text-slate-700">Intent confidence: </span>{Math.round(c.intent_confidence * 100)}%</span>}
+            {c.intent_reason && <span className="min-w-0"><span className="font-semibold text-slate-700">Intent: </span>{c.intent_reason}</span>}
+          </div>
+          {!!c.detected_entities?.length && <div className="mt-3 flex flex-wrap gap-1.5">{c.detected_entities.map((entity, index) => <span key={`${entity.type}-${entity.value}-${index}`} className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">{entity.value}</span>)}</div>}
           <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:items-start">
             <span className={cn('inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold', c.decision_source === 'manual' ? 'bg-slate-200 text-slate-700' : 'bg-violet-100 text-violet-700')}>
               {c.decision_source === 'manual' ? <ShieldCheck className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
@@ -280,7 +311,7 @@ function CommentCard({
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
             <span className="text-xs text-slate-500">Was the AI decision accurate?</span>
-            {feedbackSent ? <span className="text-xs font-medium text-emerald-700">Feedback saved</span> : <><button type="button" onClick={() => feedback(5)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700" title="Mark the AI decision as accurate"><ThumbsUp className="h-3.5 w-3.5" />Accurate</button><button type="button" onClick={() => feedback(1, c.status)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-700" title="Mark the AI decision as needing correction"><ThumbsDown className="h-3.5 w-3.5" />Needs correction</button></>}
+            {feedbackSent ? <span className="text-xs font-medium text-emerald-700">Feedback saved</span> : <><button type="button" onClick={() => feedback(5)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700" title="Mark the AI decision as accurate"><ThumbsUp className="h-3.5 w-3.5" />Accurate</button><select value={correctedIntent} onChange={(event) => setCorrectedIntent(event.target.value)} className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-600 outline-none focus:border-violet-400"><option value="">Correct intent...</option>{INTENT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><button type="button" onClick={() => feedback(1, correctedIntent || undefined)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-700" title="Save an intent correction"><ThumbsDown className="h-3.5 w-3.5" />Needs correction</button></>}
           </div>
         </div>
         <aside className="shrink-0 text-right sm:pl-4">

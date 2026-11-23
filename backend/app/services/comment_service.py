@@ -82,11 +82,16 @@ async def process_comment(
         comment = existing_comment
         comment.status = status
         comment.intent = analysis.get("intent")
+        comment.intent_confidence = analysis.get("intent_confidence")
+        comment.intent_reason = analysis.get("intent_reason")
         comment.spam_score = spam_score
         comment.moderation_confidence = moderation_confidence
         comment.moderation_reason = analysis.get("moderation_reason")
         comment.decision_source = "ai"
         comment.sentiment = analysis.get("sentiment")
+        comment.sentiment_score = analysis.get("sentiment_score")
+        comment.urgency = analysis.get("urgency")
+        comment.detected_entities = analysis.get("detected_entities")
         comment.ai_reply = analysis.get("reply")
         comment.product_sku = payload.product_sku
         comment.product_price = payload.product_price
@@ -111,11 +116,16 @@ async def process_comment(
             product_context=payload.product_context,
             status=status,
             intent=analysis.get("intent"),
+            intent_confidence=analysis.get("intent_confidence"),
+            intent_reason=analysis.get("intent_reason"),
             spam_score=spam_score,
             moderation_confidence=moderation_confidence,
             moderation_reason=analysis.get("moderation_reason"),
             decision_source="ai",
             sentiment=analysis.get("sentiment"),
+            sentiment_score=analysis.get("sentiment_score"),
+            urgency=analysis.get("urgency"),
+            detected_entities=analysis.get("detected_entities"),
             ai_reply=analysis.get("reply"),
             reply_sent=status == "replied",
             reply_sent_at=now if status == "replied" else None,
@@ -132,7 +142,12 @@ async def process_comment(
         ai_reply=analysis.get("reply") if status in ("approved", "replied") else None,
         spam_score=spam_score,
         intent=analysis.get("intent"),
+        intent_confidence=analysis.get("intent_confidence"),
+        intent_reason=analysis.get("intent_reason"),
         sentiment=analysis.get("sentiment"),
+        sentiment_score=analysis.get("sentiment_score"),
+        urgency=analysis.get("urgency"),
+        detected_entities=analysis.get("detected_entities"),
         moderation_confidence=moderation_confidence,
         moderation_reason=analysis.get("moderation_reason"),
     )

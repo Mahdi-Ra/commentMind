@@ -1,4 +1,4 @@
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, func, Float, Integer
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, func, Float, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 import uuid
@@ -25,11 +25,16 @@ class Comment(Base):
     # AI Analysis
     status: Mapped[str] = mapped_column(String, default="pending")  # pending, approved, spam, replied, uncertain
     intent: Mapped[str] = mapped_column(String, nullable=True)  # question, complaint, praise, spam, other
+    intent_confidence: Mapped[float] = mapped_column(Float, nullable=True)
+    intent_reason: Mapped[str] = mapped_column(Text, nullable=True)
     spam_score: Mapped[float] = mapped_column(Float, nullable=True)
     moderation_confidence: Mapped[float] = mapped_column(Float, nullable=True)
     moderation_reason: Mapped[str] = mapped_column(Text, nullable=True)
     decision_source: Mapped[str] = mapped_column(String, default="ai", nullable=False)  # ai, manual
     sentiment: Mapped[str] = mapped_column(String, nullable=True)  # positive, negative, neutral
+    sentiment_score: Mapped[float] = mapped_column(Float, nullable=True)
+    urgency: Mapped[str] = mapped_column(String, nullable=True)  # low, normal, high
+    detected_entities: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
     
     # AI Reply
     ai_reply: Mapped[str] = mapped_column(Text, nullable=True)
